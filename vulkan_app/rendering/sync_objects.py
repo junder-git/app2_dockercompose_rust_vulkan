@@ -1,5 +1,5 @@
 import vulkan as vk
-from config import MAX_FRAMES_IN_FLIGHT
+from vulkan_app.config import MAX_FRAMES_IN_FLIGHT
 
 def create_sync_objects(app):
     """Create synchronization objects"""

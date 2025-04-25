@@ -1,5 +1,5 @@
 import vulkan as vk
-from .config import *
+from vulkan_app.config import *
 
 def check_result(result, message):
     """Check a Vulkan result code and print debug message if it fails"""

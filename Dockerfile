@@ -19,7 +19,7 @@ RUN pip install numpy vulkan glfw
 WORKDIR /app
 
 # Copy your Vulkan application files
-COPY vulkan_app/ /app/
+COPY vulkan_app /app/
 
 # Set display for X forwarding
 ENV DISPLAY=host.docker.internal:0.0

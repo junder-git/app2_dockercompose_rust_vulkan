@@ -1,6 +1,6 @@
 import vulkan as vk
 import traceback
-from memory.memory_type import find_memory_type
+from .memory_type import find_memory_type
 
 def create_buffer(app, size, usage, properties):
     """Helper function to create a buffer"""

@@ -1,9 +1,9 @@
 import vulkan as vk
 import ctypes
 import traceback
-from config import VERTICES
-from memory.buffer import create_buffer
-from memory.buffer_copy import copy_buffer
+from vulkan_app.config import VERTICES
+from ..memory.buffer import create_buffer
+from ..memory.buffer_copy import copy_buffer
 
 def create_vertex_buffer(app):
     """Create vertex buffer for the triangle"""

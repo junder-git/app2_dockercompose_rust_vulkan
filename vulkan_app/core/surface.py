@@ -1,6 +1,6 @@
 import glfw
 import ctypes
-from utils.vulkan_utils import check_result
+from ..utils.vulkan_utils import check_result
 
 def create_surface(app):
     """Create window surface for rendering"""

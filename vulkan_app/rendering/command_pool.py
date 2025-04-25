@@ -1,5 +1,5 @@
 import vulkan as vk
-from core.physical_device import find_queue_families
+from ..core.physical_device import find_queue_families
 
 def create_command_pool(app):
     """Create command pool for command buffers"""

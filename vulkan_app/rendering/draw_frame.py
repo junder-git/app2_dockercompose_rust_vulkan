@@ -1,7 +1,7 @@
 import vulkan as vk
 import traceback
-from config import vkAcquireNextImageKHR, vkQueuePresentKHR
-from rendering.command_buffers import record_command_buffer
+from vulkan_app.config import vkAcquireNextImageKHR, vkQueuePresentKHR
+from .command_buffers import record_command_buffer
 
 def draw_frame(app):
     """Draw a frame"""

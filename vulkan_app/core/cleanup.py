@@ -1,7 +1,7 @@
 import vulkan as vk
 import glfw
 from vulkan_app.config import ENABLE_VALIDATION_LAYERS, vkDestroySwapchainKHR
-from vulkan_app.rendering.swap_chain import cleanup_swap_chain
+from ..rendering.swap_chain import cleanup_swap_chain
 
 def cleanup(app):
     """Clean up Vulkan resources"""

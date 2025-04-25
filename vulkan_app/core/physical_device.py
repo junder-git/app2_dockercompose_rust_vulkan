@@ -1,7 +1,7 @@
 import vulkan as vk
 import traceback
-from config import vkGetPhysicalDeviceSurfaceSupportKHR, vkGetPhysicalDeviceSurfaceCapabilitiesKHR
-from config import vkGetPhysicalDeviceSurfaceFormatsKHR, vkGetPhysicalDeviceSurfacePresentModesKHR
+from vulkan_app.config import vkGetPhysicalDeviceSurfaceSupportKHR, vkGetPhysicalDeviceSurfaceCapabilitiesKHR
+from vulkan_app.config import vkGetPhysicalDeviceSurfaceFormatsKHR, vkGetPhysicalDeviceSurfacePresentModesKHR
 
 def pick_physical_device(app):
     """Select a suitable physical device (GPU)"""

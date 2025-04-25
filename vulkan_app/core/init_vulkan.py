@@ -1,19 +1,19 @@
 import traceback
-from utils.config import ENABLE_VALIDATION_LAYERS
-from core.instance import create_instance
-from core.debug_messenger import setup_debug_messenger
-from core.surface import create_surface
-from core.physical_device import pick_physical_device
-from core.logical_device import create_logical_device
-from rendering.swap_chain import create_swap_chain
-from rendering.image_views import create_image_views
-from rendering.render_pass import create_render_pass
-from rendering.graphics_pipeline import create_graphics_pipeline
-from rendering.framebuffers import create_framebuffers
-from rendering.command_pool import create_command_pool
-from rendering.vertex_buffer import create_vertex_buffer
-from rendering.command_buffers import create_command_buffers
-from rendering.sync_objects import create_sync_objects
+from ..config import ENABLE_VALIDATION_LAYERS
+from .instance import create_instance
+from .debug_messenger import setup_debug_messenger
+from .surface import create_surface
+from .physical_device import pick_physical_device
+from .logical_device import create_logical_device
+from ..rendering.swap_chain import create_swap_chain
+from ..rendering.image_views import create_image_views
+from ..rendering.render_pass import create_render_pass
+from ..rendering.graphics_pipeline import create_graphics_pipeline
+from ..rendering.framebuffers import create_framebuffers
+from ..rendering.command_pool import create_command_pool
+from ..rendering.vertex_buffer import create_vertex_buffer
+from ..rendering.command_buffers import create_command_buffers
+from ..rendering.sync_objects import create_sync_objects
 
 def init_vulkan(app):
     """Initialize Vulkan by creating all necessary objects"""

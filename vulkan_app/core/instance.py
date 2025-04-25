@@ -1,7 +1,7 @@
 import vulkan as vk
 import glfw
 from config import ENABLE_VALIDATION_LAYERS, VALIDATION_LAYERS
-from utils.vulkan_utils import load_vulkan_extensions
+from ..utils.vulkan_utils import load_vulkan_extensions
 
 def create_instance(app):
     """Create Vulkan instance with optional validation layers"""

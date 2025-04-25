@@ -1,6 +1,6 @@
 import vulkan as vk
-from config import ENABLE_VALIDATION_LAYERS, VALIDATION_LAYERS
-from core.physical_device import find_queue_families
+from vulkan_app.config import ENABLE_VALIDATION_LAYERS, VALIDATION_LAYERS
+from .physical_device import find_queue_families
 
 def create_logical_device(app):
     """Create logical device and queues"""

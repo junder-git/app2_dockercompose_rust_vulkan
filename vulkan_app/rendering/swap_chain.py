@@ -2,8 +2,8 @@ import vulkan as vk
 import ctypes
 import glfw
 import traceback
-from config import vkCreateSwapchainKHR, vkGetSwapchainImagesKHR
-from core.physical_device import query_swap_chain_support, find_queue_families
+from vulkan_app.config import vkCreateSwapchainKHR, vkGetSwapchainImagesKHR
+from ..core.physical_device import query_swap_chain_support, find_queue_families
 
 def create_swap_chain(app):
     """Create swap chain for rendering"""
