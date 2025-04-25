@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  vulkan-python:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DISPLAY=host.docker.internal:0.0
+    volumes:
+      - .:/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [graphics]
+
+networks:
+  default:
+    driver: bridge
