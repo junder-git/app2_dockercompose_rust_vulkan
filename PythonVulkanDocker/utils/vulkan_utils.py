@@ -59,3 +59,48 @@ def load_vulkan_extensions(instance):
     config.vkAcquireNextImageKHR = vkAcquireNextImageKHR
     config.vkQueuePresentKHR = vkQueuePresentKHR
     config.vkDestroySurfaceKHR = vkDestroySurfaceKHR
+
+def load_device_extensions(device):
+    """Load Vulkan device extension functions directly from the device"""
+    global vkCreateSwapchainKHR
+    global vkGetSwapchainImagesKHR
+    global vkDestroySwapchainKHR
+    global vkAcquireNextImageKHR
+    global vkQueuePresentKHR
+    
+    print("DEBUG: Loading Vulkan KHR device extensions")
+    
+    # Load device-specific functions
+    try:
+        # Try using vkGetDeviceProcAddr if available
+        vkCreateSwapchainKHR = vk.vkGetDeviceProcAddr(device, "vkCreateSwapchainKHR")
+        vkGetSwapchainImagesKHR = vk.vkGetDeviceProcAddr(device, "vkGetSwapchainImagesKHR")
+        vkDestroySwapchainKHR = vk.vkGetDeviceProcAddr(device, "vkDestroySwapchainKHR")
+        vkAcquireNextImageKHR = vk.vkGetDeviceProcAddr(device, "vkAcquireNextImageKHR")
+        vkQueuePresentKHR = vk.vkGetDeviceProcAddr(device, "vkQueuePresentKHR")
+    except AttributeError:
+        print("DEBUG: vkGetDeviceProcAddr not available, using vkGetInstanceProcAddr")
+        
+        # Fall back to vkGetInstanceProcAddr if vkGetDeviceProcAddr is not available
+        from PythonVulkanDocker.core.instance import instance
+        if instance:
+            vkCreateSwapchainKHR = vk.vkGetInstanceProcAddr(instance, "vkCreateSwapchainKHR")
+            vkGetSwapchainImagesKHR = vk.vkGetInstanceProcAddr(instance, "vkGetSwapchainImagesKHR")
+            vkDestroySwapchainKHR = vk.vkGetInstanceProcAddr(instance, "vkDestroySwapchainKHR")
+            vkAcquireNextImageKHR = vk.vkGetInstanceProcAddr(instance, "vkAcquireNextImageKHR")
+            vkQueuePresentKHR = vk.vkGetInstanceProcAddr(instance, "vkQueuePresentKHR")
+    
+    print("DEBUG: Loaded device extension functions:")
+    print(f"  vkCreateSwapchainKHR: {vkCreateSwapchainKHR}")
+    print(f"  vkGetSwapchainImagesKHR: {vkGetSwapchainImagesKHR}")
+    print(f"  vkDestroySwapchainKHR: {vkDestroySwapchainKHR}")
+    print(f"  vkAcquireNextImageKHR: {vkAcquireNextImageKHR}")
+    print(f"  vkQueuePresentKHR: {vkQueuePresentKHR}")
+    
+    # Update the config module's variables
+    import PythonVulkanDocker.config as config
+    config.vkCreateSwapchainKHR = vkCreateSwapchainKHR
+    config.vkGetSwapchainImagesKHR = vkGetSwapchainImagesKHR
+    config.vkDestroySwapchainKHR = vkDestroySwapchainKHR
+    config.vkAcquireNextImageKHR = vkAcquireNextImageKHR
+    config.vkQueuePresentKHR = vkQueuePresentKHR

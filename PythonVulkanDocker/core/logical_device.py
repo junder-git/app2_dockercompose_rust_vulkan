@@ -50,6 +50,10 @@ def create_logical_device(app):
         # Create the logical device
         app.device = vk.vkCreateDevice(app.physicalDevice, createInfo, None)
         
+        # Load device extension functions
+        from PythonVulkanDocker.utils.vulkan_utils import load_device_extensions
+        load_device_extensions(app.device)
+        
         # Get queue handles
         app.graphicsQueue = vk.vkGetDeviceQueue(
             app.device, 
