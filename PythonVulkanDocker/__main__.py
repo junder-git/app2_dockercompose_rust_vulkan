@@ -183,13 +183,14 @@ class PythonVulkanDocker:
         self.frameCount = 0
         
         # Initialize window
+        _lazy_attributes["init_window"]()
         init_window(self)
     
     def run(self):
         """Main application loop"""
         print("DEBUG: Starting application")
         
-        if not init_vulkan(self):
+        if not _lazy_attributes["init_vulkan"](self):
             print("ERROR: Failed to initialize Vulkan")
             return
             
@@ -198,7 +199,7 @@ class PythonVulkanDocker:
             while not glfw.window_should_close(self.window):
                 glfw.poll_events()
                 
-                if not draw_frame(self):
+                if not _lazy_attributes["draw_frame"](self):
                     print("ERROR: Failed to draw frame")
                     break
                     
@@ -211,7 +212,7 @@ class PythonVulkanDocker:
             print(f"ERROR in main loop: {e}")
             traceback.print_exc()
         finally:
-            cleanup(self)
+            _lazy_attributes["cleanup"](self)
 
 
 def main():
