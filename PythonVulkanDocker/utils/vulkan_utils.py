@@ -1,5 +1,5 @@
 import vulkan as vk
-from vulkan_app.config import *
+from PythonVulkanDocker.config import *
 
 def check_result(result, message):
     """Check a Vulkan result code and print debug message if it fails"""
@@ -31,7 +31,7 @@ def load_vulkan_extensions(instance):
     vkQueuePresentKHR = vk.vkGetInstanceProcAddr(instance, "vkQueuePresentKHR")
     
     # Update the config module's variables
-    import vulkan_app.config as config
+    import PythonVulkanDocker.config as config
     config.vkGetPhysicalDeviceSurfaceSupportKHR = vkGetPhysicalDeviceSurfaceSupportKHR
     config.vkGetPhysicalDeviceSurfaceCapabilitiesKHR = vkGetPhysicalDeviceSurfaceCapabilitiesKHR
     config.vkGetPhysicalDeviceSurfaceFormatsKHR = vkGetPhysicalDeviceSurfaceFormatsKHR

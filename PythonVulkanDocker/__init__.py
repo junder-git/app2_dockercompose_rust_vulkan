@@ -1,5 +1,10 @@
-# vulkan_app/__init__.py
+#!/usr/bin/env python3
 """
+Vulkan Triangle Demo Application - Main Entry Point
+
+This script initializes and runs a simple Vulkan application
+that renders a triangle with vertex colors.
+
 Vulkan Application Package
 
 This package provides a modular framework for running
@@ -8,7 +13,60 @@ Vulkan applications with Python.
 
 __version__ = "0.1.0"
 
+import sys
+import traceback
+import glfw
+import traceback
 import importlib
+import numpy as np
+
+# Set to True to enable Vulkan validation layers
+ENABLE_VALIDATION_LAYERS = False
+VALIDATION_LAYERS = ["VK_LAYER_KHRONOS_validation"]
+
+# Maximum frames in flight
+MAX_FRAMES_IN_FLIGHT = 2
+
+# Triangle vertices
+VERTICES = np.array([
+    # Position        # Color
+     0.0, -0.5, 0.0,  1.0, 0.0, 0.0,  # Bottom center (red)
+     0.5,  0.5, 0.0,  0.0, 1.0, 0.0,  # Top right (green) 
+    -0.5,  0.5, 0.0,  0.0, 0.0, 1.0,  # Top left (blue)
+], dtype=np.float32)
+
+# Vertex shader
+VERTEX_SHADER_CODE = """
+#version 450
+layout(location = 0) in vec3 inPosition;
+layout(location = 1) in vec3 inColor;
+layout(location = 0) out vec3 fragColor;
+void main() {
+    gl_Position = vec4(inPosition, 1.0);
+    fragColor = inColor;
+}
+"""
+
+# Fragment shader
+FRAGMENT_SHADER_CODE = """
+#version 450
+layout(location = 0) in vec3 fragColor;
+layout(location = 0) out vec4 outColor;
+void main() {
+    outColor = vec4(fragColor, 1.0);
+}
+"""
+
+# Extension functions (will be loaded at runtime)
+vkGetPhysicalDeviceSurfaceSupportKHR = None
+vkGetPhysicalDeviceSurfaceCapabilitiesKHR = None
+vkGetPhysicalDeviceSurfaceFormatsKHR = None
+vkGetPhysicalDeviceSurfacePresentModesKHR = None
+vkCreateSwapchainKHR = None
+vkGetSwapchainImagesKHR = None
+vkDestroySwapchainKHR = None
+vkAcquireNextImageKHR = None
+vkQueuePresentKHR = None
 
 # Custom lazy loader for individual attributes
 def _lazy_import(module_path, attribute=None):
@@ -22,25 +80,6 @@ def _lazy_import(module_path, attribute=None):
 
 # Dictionary to store all lazily loadable attributes
 _lazy_attributes = {
-    # Config variables
-    'ENABLE_VALIDATION_LAYERS': _lazy_import('.config', 'ENABLE_VALIDATION_LAYERS'),
-    'VALIDATION_LAYERS': _lazy_import('.config', 'VALIDATION_LAYERS'),
-    'MAX_FRAMES_IN_FLIGHT': _lazy_import('.config', 'MAX_FRAMES_IN_FLIGHT'),
-    'VERTICES': _lazy_import('.config', 'VERTICES'),
-    'VERTEX_SHADER_CODE': _lazy_import('.config', 'VERTEX_SHADER_CODE'),
-    'FRAGMENT_SHADER_CODE': _lazy_import('.config', 'FRAGMENT_SHADER_CODE'),
-    
-    # Vulkan extension functions
-    'vkGetPhysicalDeviceSurfaceSupportKHR': _lazy_import('.config', 'vkGetPhysicalDeviceSurfaceSupportKHR'),
-    'vkGetPhysicalDeviceSurfaceCapabilitiesKHR': _lazy_import('.config', 'vkGetPhysicalDeviceSurfaceCapabilitiesKHR'),
-    'vkGetPhysicalDeviceSurfaceFormatsKHR': _lazy_import('.config', 'vkGetPhysicalDeviceSurfaceFormatsKHR'),
-    'vkGetPhysicalDeviceSurfacePresentModesKHR': _lazy_import('.config', 'vkGetPhysicalDeviceSurfacePresentModesKHR'),
-    'vkCreateSwapchainKHR': _lazy_import('.config', 'vkCreateSwapchainKHR'),
-    'vkGetSwapchainImagesKHR': _lazy_import('.config', 'vkGetSwapchainImagesKHR'),
-    'vkDestroySwapchainKHR': _lazy_import('.config', 'vkDestroySwapchainKHR'),
-    'vkAcquireNextImageKHR': _lazy_import('.config', 'vkAcquireNextImageKHR'),
-    'vkQueuePresentKHR': _lazy_import('.config', 'vkQueuePresentKHR'),
-    
     # Core functions
     'init_window': _lazy_import('.core.init_window', 'init_window'),
     'init_vulkan': _lazy_import('.core.init_vulkan', 'init_vulkan'),
@@ -86,9 +125,6 @@ _lazy_attributes = {
     'create_shader_module_fallback': _lazy_import('.utils.shader_compilation', 'create_shader_module_fallback')
 }
 
-# Main class import (not lazy loaded since it's core to the package)
-from .main import VulkanApp
-
 # Define __getattr__ for lazy loading
 def __getattr__(name):
     """Lazy load module attributes when accessed."""
@@ -97,9 +133,106 @@ def __getattr__(name):
     
     raise AttributeError(f"module 'vulkan_app' has no attribute '{name}'")
 
+class PythonVulkanDocker:
+    """Main Vulkan application class"""
+    def __init__(self, width=800, height=600, title="Vulkan Triangle"):
+        """Initialize the Vulkan application"""
+        # Window properties
+        self.width = width
+        self.height = height
+        self.title = title
+        self.window = None
+        
+        # Vulkan objects
+        self.instance = None
+        self.debugMessenger = None
+        self.surface = None
+        self.physicalDevice = None
+        self.device = None
+        self.graphicsQueue = None
+        self.presentQueue = None
+        
+        # Swap chain
+        self.swapChain = None
+        self.swapChainImages = []
+        self.swapChainImageFormat = None
+        self.swapChainExtent = None
+        self.swapChainImageViews = []
+        
+        # Rendering
+        self.renderPass = None
+        self.pipelineLayout = None
+        self.graphicsPipeline = None
+        self.swapChainFramebuffers = []
+        
+        # Commands
+        self.commandPool = None
+        self.commandBuffers = []
+        
+        # Vertex data
+        self.vertexBuffer = None
+        self.vertexBufferMemory = None
+        
+        # Synchronization
+        self.imageAvailableSemaphores = []
+        self.renderFinishedSemaphores = []
+        self.inFlightFences = []
+        self.frameIndex = 0
+        
+        # Debug counters
+        self.frameCount = 0
+        
+        # Initialize window
+        init_window(self)
+    
+    def run(self):
+        """Main application loop"""
+        print("DEBUG: Starting application")
+        
+        if not init_vulkan(self):
+            print("ERROR: Failed to initialize Vulkan")
+            return
+            
+        try:
+            print("DEBUG: Entering main loop")
+            while not glfw.window_should_close(self.window):
+                glfw.poll_events()
+                
+                if not draw_frame(self):
+                    print("ERROR: Failed to draw frame")
+                    break
+                    
+                # For debugging, limit how long we run
+                if self.frameCount >= 500:  # Limit to 500 frames
+                    print("DEBUG: Frame limit reached, exiting")
+                    break
+                    
+        except Exception as e:
+            print(f"ERROR in main loop: {e}")
+            traceback.print_exc()
+        finally:
+            cleanup(self)
+
+
+def main():
+    """Entry point"""
+    try:
+        app = PythonVulkanDocker()
+        app.run()
+    except Exception as e:
+        print(f"ERROR: {e}")
+        traceback.print_exc()
+        return 1
+    
+    return 0
+    
+
 # Define what's exported when using "from vulkan_app import *"
 __all__ = [
     'VulkanApp',
     # Add all the other attributes
     *_lazy_attributes.keys()
 ]
+
+if __name__ == "__main__":
+    sys.exit(main())

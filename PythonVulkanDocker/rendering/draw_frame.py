@@ -1,6 +1,6 @@
 import vulkan as vk
 import traceback
-from vulkan_app.config import vkAcquireNextImageKHR, vkQueuePresentKHR
+from PythonVulkanDocker.config import vkAcquireNextImageKHR, vkQueuePresentKHR
 from .command_buffers import record_command_buffer
 
 def draw_frame(app):

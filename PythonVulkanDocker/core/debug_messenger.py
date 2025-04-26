@@ -1,5 +1,5 @@
 import vulkan as vk
-from vulkan_app.config import ENABLE_VALIDATION_LAYERS
+from PythonVulkanDocker.config import ENABLE_VALIDATION_LAYERS
 
 def setup_debug_messenger(app):
     """Set up debug messenger for validation layers"""

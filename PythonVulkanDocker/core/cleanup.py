@@ -1,6 +1,6 @@
 import vulkan as vk
 import glfw
-from vulkan_app.config import ENABLE_VALIDATION_LAYERS, vkDestroySwapchainKHR
+from PythonVulkanDocker.config import ENABLE_VALIDATION_LAYERS, vkDestroySwapchainKHR
 from ..rendering.swap_chain import cleanup_swap_chain
 
 def cleanup(app):

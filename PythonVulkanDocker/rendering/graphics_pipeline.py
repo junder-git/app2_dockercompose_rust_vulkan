@@ -1,7 +1,7 @@
 import vulkan as vk
 import ctypes
 import traceback
-from vulkan_app.config import VERTEX_SHADER_CODE, FRAGMENT_SHADER_CODE 
+from PythonVulkanDocker.config import VERTEX_SHADER_CODE, FRAGMENT_SHADER_CODE 
 from ..utils.shader_compilation import create_shader_module_from_code
 
 def create_graphics_pipeline(app):

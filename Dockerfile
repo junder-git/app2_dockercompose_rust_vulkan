@@ -25,4 +25,4 @@ COPY vulkan_app /app/
 ENV DISPLAY=host.docker.internal:0.0
 
 # Run your application
-CMD ["python", "vulkan_app/main.py"]
+CMD ["python", "-m", "main"]
