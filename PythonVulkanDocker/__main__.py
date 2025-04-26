@@ -4,134 +4,14 @@ Vulkan Triangle Demo Application - Main Entry Point
 
 This script initializes and runs a simple Vulkan application
 that renders a triangle with vertex colors.
-
-Vulkan Application Package
-
-This package provides a modular framework for running
-Vulkan applications with Python.
 """
-
-__version__ = "0.1.0"
 
 import sys
 import traceback
 import glfw
-import traceback
-import importlib
-import numpy as np
 
-# Set to True to enable Vulkan validation layers
-ENABLE_VALIDATION_LAYERS = False
-VALIDATION_LAYERS = ["VK_LAYER_KHRONOS_validation"]
-
-# Maximum frames in flight
-MAX_FRAMES_IN_FLIGHT = 2
-
-# Triangle vertices
-VERTICES = np.array([
-    # Position        # Color
-     0.0, -0.5, 0.0,  1.0, 0.0, 0.0,  # Bottom center (red)
-     0.5,  0.5, 0.0,  0.0, 1.0, 0.0,  # Top right (green) 
-    -0.5,  0.5, 0.0,  0.0, 0.0, 1.0,  # Top left (blue)
-], dtype=np.float32)
-
-# Vertex shader
-VERTEX_SHADER_CODE = """
-#version 450
-layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec3 inColor;
-layout(location = 0) out vec3 fragColor;
-void main() {
-    gl_Position = vec4(inPosition, 1.0);
-    fragColor = inColor;
-}
-"""
-
-# Fragment shader
-FRAGMENT_SHADER_CODE = """
-#version 450
-layout(location = 0) in vec3 fragColor;
-layout(location = 0) out vec4 outColor;
-void main() {
-    outColor = vec4(fragColor, 1.0);
-}
-"""
-
-# Extension functions (will be loaded at runtime)
-vkGetPhysicalDeviceSurfaceSupportKHR = None
-vkGetPhysicalDeviceSurfaceCapabilitiesKHR = None
-vkGetPhysicalDeviceSurfaceFormatsKHR = None
-vkGetPhysicalDeviceSurfacePresentModesKHR = None
-vkCreateSwapchainKHR = None
-vkGetSwapchainImagesKHR = None
-vkDestroySwapchainKHR = None
-vkAcquireNextImageKHR = None
-vkQueuePresentKHR = None
-
-# Custom lazy loader for individual attributes
-def _lazy_import(module_path, attribute=None):
-    """Import a module or attribute lazily only when accessed."""
-    def _import():
-        module = importlib.import_module(module_path)
-        if attribute is not None:
-            return getattr(module, attribute)
-        return module
-    return _import
-
-# Dictionary to store all lazily loadable attributes
-_lazy_attributes = {
-    # Core functions
-    'init_window': _lazy_import('.core.init_window', 'init_window'),
-    'init_vulkan': _lazy_import('.core.init_vulkan', 'init_vulkan'),
-    'create_instance': _lazy_import('.core.instance', 'create_instance'),
-    'setup_debug_messenger': _lazy_import('.core.debug_messenger', 'setup_debug_messenger'),
-    'create_surface': _lazy_import('.core.surface', 'create_surface'),
-    'pick_physical_device': _lazy_import('.core.physical_device', 'pick_physical_device'),
-    'find_queue_families': _lazy_import('.core.physical_device', 'find_queue_families'),
-    'query_swap_chain_support': _lazy_import('.core.physical_device', 'query_swap_chain_support'),
-    'is_device_suitable': _lazy_import('.core.physical_device', 'is_device_suitable'),
-    'create_logical_device': _lazy_import('.core.logical_device', 'create_logical_device'),
-    'cleanup': _lazy_import('.core.cleanup', 'cleanup'),
-    
-    # Rendering functions
-    'create_swap_chain': _lazy_import('.rendering.swap_chain', 'create_swap_chain'),
-    'choose_swap_surface_format': _lazy_import('.rendering.swap_chain', 'choose_swap_surface_format'),
-    'choose_swap_present_mode': _lazy_import('.rendering.swap_chain', 'choose_swap_present_mode'),
-    'choose_swap_extent': _lazy_import('.rendering.swap_chain', 'choose_swap_extent'),
-    'cleanup_swap_chain': _lazy_import('.rendering.swap_chain', 'cleanup_swap_chain'),
-    'create_image_views': _lazy_import('.rendering.image_views', 'create_image_views'),
-    'create_render_pass': _lazy_import('.rendering.render_pass', 'create_render_pass'),
-    'create_graphics_pipeline': _lazy_import('.rendering.graphics_pipeline', 'create_graphics_pipeline'),
-    'create_framebuffers': _lazy_import('.rendering.framebuffers', 'create_framebuffers'),
-    'create_command_pool': _lazy_import('.rendering.command_pool', 'create_command_pool'),
-    'create_vertex_buffer': _lazy_import('.rendering.vertex_buffer', 'create_vertex_buffer'),
-    'create_command_buffers': _lazy_import('.rendering.command_buffers', 'create_command_buffers'),
-    'record_command_buffer': _lazy_import('.rendering.command_buffers', 'record_command_buffer'),
-    'create_sync_objects': _lazy_import('.rendering.sync_objects', 'create_sync_objects'),
-    'draw_frame': _lazy_import('.rendering.draw_frame', 'draw_frame'),
-    
-    # Memory functions
-    'create_buffer': _lazy_import('.memory.buffer', 'create_buffer'),
-    'find_memory_type': _lazy_import('.memory.memory_type', 'find_memory_type'),
-    'begin_single_time_commands': _lazy_import('.memory.buffer_copy', 'begin_single_time_commands'),
-    'end_single_time_commands': _lazy_import('.memory.buffer_copy', 'end_single_time_commands'),
-    'copy_buffer': _lazy_import('.memory.buffer_copy', 'copy_buffer'),
-    
-    # Utility functions
-    'check_result': _lazy_import('.utils.vulkan_utils', 'check_result'),
-    'load_vulkan_extensions': _lazy_import('.utils.vulkan_utils', 'load_vulkan_extensions'),
-    'create_shader_module_from_code': _lazy_import('.utils.shader_compilation', 'create_shader_module_from_code'),
-    'compile_glsl_to_spir_v': _lazy_import('.utils.shader_compilation', 'compile_glsl_to_spir_v'),
-    'create_shader_module_fallback': _lazy_import('.utils.shader_compilation', 'create_shader_module_fallback')
-}
-
-# Define __getattr__ for lazy loading
-def __getattr__(name):
-    """Lazy load module attributes when accessed."""
-    if name in _lazy_attributes:
-        return _lazy_attributes[name]()
-    
-    raise AttributeError(f"module 'vulkan_app' has no attribute '{name}'")
+# Import configurations
+from .config import *
 
 class PythonVulkanDocker:
     """Main Vulkan application class"""
@@ -183,14 +63,103 @@ class PythonVulkanDocker:
         self.frameCount = 0
         
         # Initialize window
-        _lazy_attributes["init_window"]()
+        self.init_window()
+
+    def init_window(self):
+        """Initialize GLFW window as a method"""
+        from PythonVulkanDocker.core.init_window import init_window
         init_window(self)
-    
+
+    def init_vulkan(self):
+        """Initialize Vulkan as a method"""
+        from PythonVulkanDocker.core.init_vulkan import init_vulkan
+        return init_vulkan(self)
+
+    def create_instance(self):
+        """Create Vulkan instance"""
+        from PythonVulkanDocker.core.instance import create_instance
+        return create_instance(self)
+
+    def setup_debug_messenger(self):
+        """Setup debug messenger"""
+        from PythonVulkanDocker.core.debug_messenger import setup_debug_messenger
+        return setup_debug_messenger(self)
+
+    def create_surface(self):
+        """Create window surface"""
+        from PythonVulkanDocker.core.surface import create_surface
+        return create_surface(self)
+
+    def pick_physical_device(self):
+        """Pick physical device (GPU)"""
+        from PythonVulkanDocker.core.physical_device import pick_physical_device
+        return pick_physical_device(self)
+
+    def create_logical_device(self):
+        """Create logical device"""
+        from PythonVulkanDocker.core.logical_device import create_logical_device
+        return create_logical_device(self)
+
+    def create_swap_chain(self):
+        """Create swap chain"""
+        from PythonVulkanDocker.rendering.swap_chain import create_swap_chain
+        return create_swap_chain(self)
+
+    def create_image_views(self):
+        """Create image views"""
+        from PythonVulkanDocker.rendering.image_views import create_image_views
+        return create_image_views(self)
+
+    def create_render_pass(self):
+        """Create render pass"""
+        from PythonVulkanDocker.rendering.render_pass import create_render_pass
+        return create_render_pass(self)
+
+    def create_graphics_pipeline(self):
+        """Create graphics pipeline"""
+        from PythonVulkanDocker.rendering.graphics_pipeline import create_graphics_pipeline
+        return create_graphics_pipeline(self)
+
+    def create_framebuffers(self):
+        """Create framebuffers"""
+        from PythonVulkanDocker.rendering.framebuffers import create_framebuffers
+        return create_framebuffers(self)
+
+    def create_command_pool(self):
+        """Create command pool"""
+        from PythonVulkanDocker.rendering.command_pool import create_command_pool
+        return create_command_pool(self)
+
+    def create_vertex_buffer(self):
+        """Create vertex buffer"""
+        from PythonVulkanDocker.rendering.vertex_buffer import create_vertex_buffer
+        return create_vertex_buffer(self)
+
+    def create_command_buffers(self):
+        """Create command buffers"""
+        from PythonVulkanDocker.rendering.command_buffers import create_command_buffers
+        return create_command_buffers(self)
+
+    def create_sync_objects(self):
+        """Create synchronization objects"""
+        from PythonVulkanDocker.rendering.sync_objects import create_sync_objects
+        return create_sync_objects(self)
+
+    def draw_frame(self):
+        """Draw a frame"""
+        from PythonVulkanDocker.rendering.draw_frame import draw_frame
+        return draw_frame(self)
+
+    def cleanup(self):
+        """Cleanup Vulkan resources"""
+        from PythonVulkanDocker.core.cleanup import cleanup
+        cleanup(self)
+
     def run(self):
         """Main application loop"""
         print("DEBUG: Starting application")
         
-        if not _lazy_attributes["init_vulkan"](self):
+        if not self.init_vulkan():
             print("ERROR: Failed to initialize Vulkan")
             return
             
@@ -199,7 +168,7 @@ class PythonVulkanDocker:
             while not glfw.window_should_close(self.window):
                 glfw.poll_events()
                 
-                if not _lazy_attributes["draw_frame"](self):
+                if not self.draw_frame():
                     print("ERROR: Failed to draw frame")
                     break
                     
@@ -212,8 +181,7 @@ class PythonVulkanDocker:
             print(f"ERROR in main loop: {e}")
             traceback.print_exc()
         finally:
-            _lazy_attributes["cleanup"](self)
-
+            self.cleanup()
 
 def main():
     """Entry point"""
@@ -226,14 +194,9 @@ def main():
         return 1
     
     return 0
-    
 
-# Define what's exported when using "from vulkan_app import *"
-__all__ = [
-    'VulkanApp',
-    # Add all the other attributes
-    *_lazy_attributes.keys()
-]
+# Export the application class for potential imports
+__all__ = ['PythonVulkanDocker']
 
 if __name__ == "__main__":
     sys.exit(main())

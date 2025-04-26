@@ -1,6 +1,10 @@
 import vulkan as vk
 import glfw
-from PythonVulkanDocker.config import ENABLE_VALIDATION_LAYERS, vkDestroySwapchainKHR
+from PythonVulkanDocker.config import (
+    ENABLE_VALIDATION_LAYERS, 
+    vkDestroySwapchainKHR, 
+    vkDestroySurfaceKHR
+)
 from ..rendering.swap_chain import cleanup_swap_chain
 
 def cleanup(app):
@@ -40,7 +44,10 @@ def cleanup(app):
             vk.vkDestroyRenderPass(app.device, app.renderPass, None)
         
         # Clean up swap chain
-        cleanup_swap_chain(app)
+        try:
+            cleanup_swap_chain(app)
+        except Exception as swap_chain_error:
+            print(f"ERROR in swap chain cleanup: {swap_chain_error}")
         
         # Clean up device
         if app.device:
@@ -55,7 +62,7 @@ def cleanup(app):
         
         # Clean up surface
         if app.surface:
-            vk.vkDestroySurfaceKHR(app.instance, app.surface, None)
+            vkDestroySurfaceKHR(app.instance, app.surface, None)
         
         # Clean up instance
         if app.instance:

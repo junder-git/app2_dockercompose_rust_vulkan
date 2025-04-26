@@ -67,10 +67,11 @@ def is_device_suitable(app, device):
         indices = find_queue_families(app, device)
         print(f"DEBUG: Queue families found: {indices}")
         
-        if 'graphicsFamily' not in indices or 'presentFamily' not in indices:
-            print(f"DEBUG: Device missing required queue families")
+        # Ensure both graphics and present families exist
+        if 'graphicsFamily' not in indices:
+            print("DEBUG: Device missing graphics queue family")
             return False
-            
+        
         # Check device extensions support
         requiredExtensions = [vk.VK_KHR_SWAPCHAIN_EXTENSION_NAME]
         availableExtensions = vk.vkEnumerateDeviceExtensionProperties(device, None)
@@ -80,23 +81,32 @@ def is_device_suitable(app, device):
         if not all(ext in availableExtensionNames for ext in requiredExtensions):
             print(f"DEBUG: Device missing required extensions")
             return False
-            
-        # Check swap chain support
-        swapChainSupport = query_swap_chain_support(app, device)
-        print(f"DEBUG: Swap chain formats: {len(swapChainSupport['formats'])}")
-        print(f"DEBUG: Swap chain present modes: {len(swapChainSupport['presentModes'])}")
         
-        if not swapChainSupport['formats'] or not swapChainSupport['presentModes']:
-            print(f"DEBUG: Device has inadequate swap chain support")
+        # Query swap chain support with more detailed error handling
+        swapChainSupport = query_swap_chain_support(app, device)
+        
+        # Slightly more relaxed swap chain support check
+        if not swapChainSupport['capabilities']:
+            print("DEBUG: No surface capabilities found")
             return False
-            
+        
+        # If at least one format and one present mode exist, consider it suitable
+        if len(swapChainSupport['formats']) == 0:
+            print("DEBUG: No surface formats found")
+            return False
+        
+        if len(swapChainSupport['presentModes']) == 0:
+            print("DEBUG: No present modes found")
+            return False
+        
         print(f"DEBUG: Device {props.deviceName} is suitable")
         return True
     except Exception as e:
         print(f"ERROR: Device suitability check failed: {e}")
+        import traceback
         traceback.print_exc()
         return False
-
+    
 def find_queue_families(app, device):
     """Find required queue families on the device"""
     try:
@@ -113,14 +123,29 @@ def find_queue_families(app, device):
             
             # Check for presentation support
             try:
+                # Import the function from config to ensure it's loaded
+                from PythonVulkanDocker.config import vkGetPhysicalDeviceSurfaceSupportKHR
+                
+                # Verify the function exists
+                if vkGetPhysicalDeviceSurfaceSupportKHR is None:
+                    print("WARNING: Surface support function not loaded")
+                    continue
+                
+                # Directly call the function
                 presentSupport = vkGetPhysicalDeviceSurfaceSupportKHR(device, i, app.surface)
                 print(f"DEBUG: Queue family {i} presentation support: {presentSupport}")
+                
                 if presentSupport:
                     indices['presentFamily'] = i
             except Exception as e:
                 print(f"ERROR checking presentation support for queue {i}: {e}")
                 
-        return indices
+        # Ensure both graphics and present families are found
+        if 'graphicsFamily' in indices and 'presentFamily' in indices:
+            return indices
+        
+        print("DEBUG: Could not find suitable queue families")
+        return {}
     except Exception as e:
         print(f"ERROR: Failed to find queue families: {e}")
         traceback.print_exc()
@@ -129,18 +154,61 @@ def find_queue_families(app, device):
 def query_swap_chain_support(app, device):
     """Query swap chain support details"""
     try:
-        support = {}
+        # Import global functions to ensure they're loaded
+        from PythonVulkanDocker.config import (
+            vkGetPhysicalDeviceSurfaceCapabilitiesKHR,
+            vkGetPhysicalDeviceSurfaceFormatsKHR,
+            vkGetPhysicalDeviceSurfacePresentModesKHR
+        )
         
-        # Get surface capabilities - use the global function instead of vk namespace
-        support['capabilities'] = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, app.surface)
+        support = {
+            'capabilities': None,
+            'formats': [],
+            'presentModes': []
+        }
         
-        # Get surface formats - use the global function
-        support['formats'] = vkGetPhysicalDeviceSurfaceFormatsKHR(device, app.surface)
+        # Check if extension functions are loaded
+        if vkGetPhysicalDeviceSurfaceCapabilitiesKHR is None:
+            print("ERROR: Surface capabilities function not loaded")
+            return support
         
-        # Get presentation modes - use the global function
-        support['presentModes'] = vkGetPhysicalDeviceSurfacePresentModesKHR(device, app.surface)
+        if vkGetPhysicalDeviceSurfaceFormatsKHR is None:
+            print("ERROR: Surface formats function not loaded")
+            return support
+        
+        if vkGetPhysicalDeviceSurfacePresentModesKHR is None:
+            print("ERROR: Surface present modes function not loaded")
+            return support
+        
+        try:
+            # Get surface capabilities
+            support['capabilities'] = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, app.surface)
+            print(f"DEBUG: Surface capabilities retrieved: {support['capabilities']}")
+        except Exception as e:
+            print(f"ERROR: Failed to get surface capabilities: {e}")
+            return support
+        
+        try:
+            # Get surface formats
+            support['formats'] = vkGetPhysicalDeviceSurfaceFormatsKHR(device, app.surface)
+            print(f"DEBUG: Surface formats retrieved: {len(support['formats'])} formats")
+        except Exception as e:
+            print(f"ERROR: Failed to get surface formats: {e}")
+            support['formats'] = []
+        
+        try:
+            # Get presentation modes
+            support['presentModes'] = vkGetPhysicalDeviceSurfacePresentModesKHR(device, app.surface)
+            print(f"DEBUG: Surface present modes retrieved: {len(support['presentModes'])} modes")
+        except Exception as e:
+            print(f"ERROR: Failed to get surface present modes: {e}")
+            support['presentModes'] = []
         
         return support
     except Exception as e:
-        print(f"ERROR: Failed to query swap chain support: {e}")
-        return {'capabilities': None, 'formats': [], 'presentModes': []}
+        print(f"ERROR: Unexpected error in query_swap_chain_support: {e}")
+        return {
+            'capabilities': None,
+            'formats': [],
+            'presentModes': []
+        }

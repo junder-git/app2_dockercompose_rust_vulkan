@@ -1,6 +1,6 @@
 FROM python:3.9
 
-# Install dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libvulkan1 \
     vulkan-tools \
@@ -10,16 +10,28 @@ RUN apt-get update && apt-get install -y \
     x11-apps \
     libglfw3-dev \
     libglfw3 \
+    wget \
+    unzip \
+    git \
+    cmake \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
+# Install glslangValidator
+RUN wget https://github.com/KhronosGroup/glslang/releases/download/master-tot/glslang-master-linux-Release.zip \
+    && unzip glslang-master-linux-Release.zip \
+    && mv bin/glslangValidator /usr/local/bin/ \
+    && chmod +x /usr/local/bin/glslangValidator \
+    && rm glslang-master-linux-Release.zip
+
 # Install Python packages
-RUN pip install numpy vulkan glfw
+RUN pip install numpy vulkan glfw cffi
 
 # Create and set working directory
 WORKDIR /app
 
 # Copy your Vulkan application files
-COPY PythonVulkanDocker /app/
+COPY PythonVulkanDocker /app/PythonVulkanDocker
 
 # Set display for X forwarding
 ENV DISPLAY=host.docker.internal:0.0

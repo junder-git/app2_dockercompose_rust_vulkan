@@ -1,4 +1,5 @@
 import vulkan as vk
+import ctypes
 import traceback
 from PythonVulkanDocker.config import vkAcquireNextImageKHR, vkQueuePresentKHR
 from .command_buffers import record_command_buffer
@@ -12,15 +13,27 @@ def draw_frame(app):
         
         # Acquire next image
         try:
-            result, imageIndex = vkAcquireNextImageKHR(
+            # Create a uint32_t pointer for image index using the Vulkan library's expected type
+            image_index_array = (ctypes.c_uint32 * 1)()
+            
+            result = vk.vkAcquireNextImageKHR(
                 app.device,
                 app.swapChain,
                 1000000000,  # ~1 second timeout
                 app.imageAvailableSemaphores[app.frameIndex],
-                None
+                None,
+                image_index_array
             )
+            
+            # Get the image index from the array
+            imageIndex = image_index_array[0]
+            
+            print(f"DEBUG: Acquired image index: {imageIndex}")
+            print(f"DEBUG: Acquire result: {result}")
+        
         except Exception as e:
             print(f"ERROR: Failed to acquire next image: {e}")
+            traceback.print_exc()
             return False
             
         if result == vk.VK_ERROR_OUT_OF_DATE_KHR:

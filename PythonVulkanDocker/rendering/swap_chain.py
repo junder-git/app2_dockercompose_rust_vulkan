@@ -14,6 +14,22 @@ def create_swap_chain(app):
         return False
         
     try:
+        # Import KHR functions to ensure they're loaded
+        from PythonVulkanDocker.config import (
+            vkCreateSwapchainKHR, 
+            vkGetSwapchainImagesKHR
+        )
+        import ctypes
+        
+        # Verify KHR functions are loaded
+        if vkCreateSwapchainKHR is None:
+            print("ERROR: vkCreateSwapchainKHR function is not loaded")
+            return False
+        
+        if vkGetSwapchainImagesKHR is None:
+            print("ERROR: vkGetSwapchainImagesKHR function is not loaded")
+            return False
+        
         # Query swap chain support
         swapChainSupport = query_swap_chain_support(app, app.physicalDevice)
         
@@ -34,11 +50,32 @@ def create_swap_chain(app):
             imageCount = min(imageCount, swapChainSupport['capabilities'].maxImageCount)
             
         print(f"DEBUG: Swap chain using {imageCount} images")
+        
+        # Handle queue families
+        indices = find_queue_families(app, app.physicalDevice)
+        
+        # Prepare queue family indices using ctypes
+        graphicsFamily = indices.get('graphicsFamily')
+        presentFamily = indices.get('presentFamily')
+        
+        # Default to exclusive mode
+        imageSharingMode = vk.VK_SHARING_MODE_EXCLUSIVE
+        queueFamilyIndexCount = 0
+        pQueueFamilyIndices = None
+        
+        # If graphics and present families are different, use concurrent mode
+        if graphicsFamily is not None and presentFamily is not None and graphicsFamily != presentFamily:
+            imageSharingMode = vk.VK_SHARING_MODE_CONCURRENT
+            queueFamilyIndexCount = 2
             
-        # Create base swap chain info
-        # Create an empty array (should work even if not used)
-        empty_indices = (ctypes.c_uint32 * 0)()
-
+            # Create a ctypes array of queue family indices
+            queueFamilyIndicesArray = (ctypes.c_uint32 * 2)(
+                graphicsFamily, 
+                presentFamily
+            )
+            pQueueFamilyIndices = queueFamilyIndicesArray
+        
+        # Create swap chain info
         createInfo = vk.VkSwapchainCreateInfoKHR(
             surface=app.surface,
             minImageCount=imageCount,
@@ -52,24 +89,26 @@ def create_swap_chain(app):
             presentMode=presentMode,
             clipped=vk.VK_TRUE,
             oldSwapchain=None,
-            imageSharingMode=vk.VK_SHARING_MODE_EXCLUSIVE,
-            queueFamilyIndexCount=0,
-            pQueueFamilyIndices=empty_indices
+            
+            # Add queue family details
+            imageSharingMode=imageSharingMode,
+            queueFamilyIndexCount=queueFamilyIndexCount,
+            pQueueFamilyIndices=pQueueFamilyIndices
         )
         
-        # Handle queue families
-        indices = find_queue_families(app, app.physicalDevice)
+        # Attempt to create swap chain
+        try:
+            app.swapChain = vkCreateSwapchainKHR(app.device, createInfo, None)
+        except Exception as e:
+            print(f"ERROR: Failed to create swap chain with vkCreateSwapchainKHR: {e}")
+            return False
         
-        # Simplified approach - just use exclusive mode
-        # This will work for most devices and avoids ctypes issues
-        createInfo.imageSharingMode = vk.VK_SHARING_MODE_EXCLUSIVE
-        createInfo.queueFamilyIndexCount = 0  # Not used in exclusive mode
-            
-        # Create the swap chain
-        app.swapChain = vkCreateSwapchainKHR(app.device, createInfo, None)
-        
-        # Get the swap chain images
-        app.swapChainImages = vkGetSwapchainImagesKHR(app.device, app.swapChain)
+        # Get swap chain images
+        try:
+            app.swapChainImages = vkGetSwapchainImagesKHR(app.device, app.swapChain)
+        except Exception as e:
+            print(f"ERROR: Failed to get swap chain images: {e}")
+            return False
         
         # Save format and extent
         app.swapChainImageFormat = surfaceFormat.format
@@ -78,7 +117,8 @@ def create_swap_chain(app):
         print(f"DEBUG: Swap chain created successfully with {len(app.swapChainImages)} images")
         return True
     except Exception as e:
-        print(f"ERROR: Failed to create swap chain: {e}")
+        print(f"ERROR: Unexpected error in create_swap_chain: {e}")
+        import traceback
         traceback.print_exc()
         return False
             
@@ -133,7 +173,8 @@ def cleanup_swap_chain(app):
         for imageView in app.swapChainImageViews:
             vk.vkDestroyImageView(app.device, imageView, None)
             
-        # Clean up swap chain
+        # Clean up swap chain using the loaded extension function
+        from PythonVulkanDocker.config import vkDestroySwapchainKHR
         vkDestroySwapchainKHR(app.device, app.swapChain, None)
         
         print("DEBUG: Swap chain cleanup successful")
