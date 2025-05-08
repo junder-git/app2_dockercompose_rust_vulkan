@@ -2,6 +2,7 @@ import vulkan as vk
 import ctypes
 import glfw
 import traceback
+import sys
 from PythonVulkanDocker.config import vkCreateSwapchainKHR, vkGetSwapchainImagesKHR
 from ..core.physical_device import query_swap_chain_support, find_queue_families
 
