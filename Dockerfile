@@ -16,7 +16,8 @@ RUN apt-get update && apt-get install -y \
     cmake \
     g++ \
     vulkan-validationlayers \
-    spirv-tools \              
+    spirv-tools \  
+    glslang-tools \              
     && rm -rf /var/lib/apt/lists/*
 
 # Install glslangValidator

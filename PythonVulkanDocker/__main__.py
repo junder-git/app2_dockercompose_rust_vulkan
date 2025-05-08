@@ -9,6 +9,8 @@ that renders a triangle with vertex colors.
 import sys
 import traceback
 import glfw
+import time
+import vulkan as vk
 
 # Import configurations
 from .config import *
@@ -77,17 +79,39 @@ class PythonVulkanDocker:
         # Timing
         self.startTime = 0
         
+        # Application state
+        self.running = False
+        
+        # Logging
+        self.log_init_steps()
+        
         # Initialize window
         self.init_window()
+
+    def log_init_steps(self):
+        """Log initialization steps for debugging"""
+        print("=" * 50)
+        print("Vulkan Triangle Application Initialization")
+        print("=" * 50)
+        print(f"Window Size: {self.width}x{self.height}")
+        print(f"Title: {self.title}")
+        print("Checking system capabilities:")
+        print(f"  GLFW Version: {glfw.get_version_string()}")
+        print(f"  Vulkan Version: JINSERT.i.e.UNKNOWN")
+        print("=" * 50)
 
     def init_window(self):
         """Initialize GLFW window as a method"""
         from PythonVulkanDocker.core.init_window import init_window
-        init_window(self)
+        print("DEBUG: Initializing GLFW window")
+        if not init_window(self):
+            print("ERROR: Failed to initialize window")
+            sys.exit(1)
 
     def init_vulkan(self):
         """Initialize Vulkan as a method"""
         from PythonVulkanDocker.core.init_vulkan import init_vulkan
+        print("DEBUG: Initializing Vulkan")
         return init_vulkan(self)
 
     def create_instance(self):
@@ -172,10 +196,22 @@ class PythonVulkanDocker:
 
     def run(self):
         """Main application loop"""
-        print("DEBUG: Starting application")
+        print("DEBUG: Starting application run method")
         
-        if not self.init_vulkan():
-            print("ERROR: Failed to initialize Vulkan")
+        # Set running flag
+        self.running = True
+        
+        # Extended error handling for Vulkan initialization
+        try:
+            print("DEBUG: Attempting Vulkan initialization")
+            if not self.init_vulkan():
+                print("CRITICAL ERROR: Failed to initialize Vulkan")
+                self.running = False
+                return
+        except Exception as init_error:
+            print(f"CRITICAL ERROR during Vulkan initialization: {init_error}")
+            traceback.print_exc()
+            self.running = False
             return
             
         # Initialize shader hot reload system if external shader files are available
@@ -189,38 +225,73 @@ class PythonVulkanDocker:
             else:
                 print("DEBUG: No external shader files found, hot reload disabled")
         
+        # Persistent loop with extended error handling
+        print("DEBUG: Entering main rendering loop")
         try:
-            print("DEBUG: Entering main loop")
-            while not glfw.window_should_close(self.window):
+            print("DEBUG: Entering glfw window loop")
+            start_time = time.time()
+            while not glfw.window_should_close(self.window) and self.running:
+                # Process window events
                 glfw.poll_events()
                 
-                if not self.draw_frame():
-                    print("ERROR: Failed to draw frame")
+                # Attempt to draw frame
+                try:
+                    if not self.draw_frame():
+                        print("ERROR: Failed to draw frame")
+                        break
+                except Exception as frame_error:
+                    print(f"ERROR in draw_frame: {frame_error}")
+                    traceback.print_exc()
+                    break
+                
+                # Prevent tight loop
+                time.sleep(0.01)
+                
+                # Optional frame count and time limit
+                self.frameCount += 1
+                if self.frameCount % 100 == 0:
+                    print(f"DEBUG: Rendered {self.frameCount} frames")
+                
+                # Optional runtime limit (e.g., 60 seconds)
+                if time.time() - start_time > 60:
+                    print("DEBUG: Maximum runtime reached")
                     break
                     
-                # For debugging, limit how long we run
-                if self.frameCount >= 10000:  # Increased limit for longer testing
-                    print("DEBUG: Frame limit reached, exiting")
-                    break
-                    
-        except Exception as e:
-            print(f"ERROR in main loop: {e}")
+        except Exception as main_loop_error:
+            print(f"CRITICAL ERROR in main loop: {main_loop_error}")
             traceback.print_exc()
         finally:
-            # Stop shader hot reload system
-            if self.shader_hot_reload:
-                self.shader_hot_reload.stop()
-                print("DEBUG: Shader hot reload system stopped")
+            # Ensure cleanup happens
+            print("DEBUG: Entering cleanup phase")
+            try:
+                if self.shader_hot_reload:
+                    self.shader_hot_reload.stop()
+                    print("DEBUG: Shader hot reload system stopped")
                 
-            self.cleanup()
+                self.cleanup()
+                print("DEBUG: Cleanup completed successfully")
+            except Exception as cleanup_error:
+                print(f"ERROR during cleanup: {cleanup_error}")
+                traceback.print_exc()
+            
+            # Close window and terminate GLFW
+            try:
+                glfw.destroy_window(self.window)
+                glfw.terminate()
+                print("DEBUG: GLFW terminated")
+            except Exception as glfw_error:
+                print(f"ERROR terminating GLFW: {glfw_error}")
 
 def main():
     """Entry point"""
     try:
+        print("DEBUG: Creating Vulkan application instance")
         app = PythonVulkanDocker()
+        print("DEBUG: Running application")
         app.run()
+        print("DEBUG: Application run completed")
     except Exception as e:
-        print(f"ERROR: {e}")
+        print(f"CRITICAL ERROR: {e}")
         traceback.print_exc()
         return 1
     
