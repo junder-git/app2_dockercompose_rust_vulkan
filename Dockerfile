@@ -70,6 +70,6 @@ RUN python -c "import setuptools; print('Setuptools import successful')" \
 
 # Ensure correct permissions
 RUN chmod +x /usr/local/bin/glslangValidator
-
+RUN chmod 644 vertex_shader.glsl fragment_shader.glsl
 # Run the application
 CMD ["python", "-m", "PythonVulkanDocker"]

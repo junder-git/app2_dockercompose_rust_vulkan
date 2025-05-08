@@ -214,27 +214,34 @@ class PythonVulkanDocker:
             self.running = False
             return
             
-        # Initialize shader hot reload system if external shader files are available
-        if hasattr(self, 'shader_files'):
-            shader_files = {k: v for k, v in self.shader_files.items() if v is not None}
-            if shader_files:
-                print(f"DEBUG: Setting up shader hot reload for: {shader_files}")
-                self.shader_hot_reload = ShaderHotReload(self, shader_files)
-                self.shader_hot_reload.start()
-                print("DEBUG: Shader hot reload system started")
-            else:
-                print("DEBUG: No external shader files found, hot reload disabled")
+        # Initialize shader hot reload system with better error handling
+        try:
+            if hasattr(self, 'shader_files'):
+                shader_files = {k: v for k, v in self.shader_files.items() if v is not None}
+                if shader_files:
+                    print(f"DEBUG: Setting up shader hot reload for: {shader_files}")
+                    self.shader_hot_reload = ShaderHotReload(self, shader_files)
+                    self.shader_hot_reload.start()
+                    print("DEBUG: Shader hot reload system started")
+                else:
+                    print("DEBUG: No external shader files found, hot reload disabled")
+        except Exception as shader_error:
+            print(f"WARNING: Error setting up shader hot reload: {shader_error}")
+            traceback.print_exc()
+            # Continue even if shader hot reload setup fails
         
         # Persistent loop with extended error handling
         print("DEBUG: Entering main rendering loop")
         try:
             print("DEBUG: Entering glfw window loop")
             start_time = time.time()
+            
+            # Main render loop - run until window is closed or application is terminated
             while not glfw.window_should_close(self.window) and self.running:
                 # Process window events
                 glfw.poll_events()
                 
-                # Attempt to draw frame
+                # Attempt to draw frame with better error handling
                 try:
                     if not self.draw_frame():
                         print("ERROR: Failed to draw frame")
@@ -244,18 +251,14 @@ class PythonVulkanDocker:
                     traceback.print_exc()
                     break
                 
-                # Prevent tight loop
-                time.sleep(0.01)
-                
-                # Optional frame count and time limit
+                # Optional frame count logging for debugging
                 self.frameCount += 1
                 if self.frameCount % 100 == 0:
                     print(f"DEBUG: Rendered {self.frameCount} frames")
                 
-                # Optional runtime limit (e.g., 60 seconds)
-                if time.time() - start_time > 60:
-                    print("DEBUG: Maximum runtime reached")
-                    break
+                # Add a small sleep to prevent 100% CPU usage
+                # Using a smaller value to maintain smooth animation
+                time.sleep(0.001)
                     
         except Exception as main_loop_error:
             print(f"CRITICAL ERROR in main loop: {main_loop_error}")
@@ -294,6 +297,13 @@ def main():
         print(f"CRITICAL ERROR: {e}")
         traceback.print_exc()
         return 1
+    
+    # Add a manual pause to keep the window open for debugging
+    try:
+        print("DEBUG: Application completed, press Enter to exit...")
+        input()  # This will keep the program running until user presses Enter
+    except KeyboardInterrupt:
+        pass
     
     return 0
 
