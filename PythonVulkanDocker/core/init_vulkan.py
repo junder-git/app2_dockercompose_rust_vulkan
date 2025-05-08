@@ -12,6 +12,7 @@ from ..rendering.graphics_pipeline import create_graphics_pipeline
 from ..rendering.framebuffers import create_framebuffers
 from ..rendering.command_pool import create_command_pool
 from ..rendering.vertex_buffer import create_vertex_buffer
+from ..memory.uniform_buffer import create_uniform_buffers, create_descriptor_pool, create_descriptor_sets
 from ..rendering.command_buffers import create_command_buffers
 from ..rendering.sync_objects import create_sync_objects
 
@@ -54,6 +55,16 @@ def init_vulkan(app):
             return False
             
         if not create_vertex_buffer(app):
+            return False
+            
+        # Create uniform buffers and descriptor sets
+        if not create_uniform_buffers(app):
+            return False
+            
+        if not create_descriptor_pool(app):
+            return False
+            
+        if not create_descriptor_sets(app):
             return False
             
         if not create_command_buffers(app):

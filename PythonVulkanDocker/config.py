@@ -11,9 +11,10 @@ This package provides a modular framework for running
 Vulkan applications with Python.
 """
 import numpy as np
+import time  # Add this for timing information
 
 # Set to True to enable Vulkan validation layers
-ENABLE_VALIDATION_LAYERS = False
+ENABLE_VALIDATION_LAYERS = True  # Changed to True for better error reporting
 VALIDATION_LAYERS = ["VK_LAYER_KHRONOS_validation"]
 
 # Maximum frames in flight
@@ -42,10 +43,23 @@ void main() {
 # Fragment shader
 FRAGMENT_SHADER_CODE = """
 #version 450
+layout(binding = 0) uniform UniformBufferObject {
+    float time;
+    vec2 resolution;
+    float padding;
+} ubo;
+
 layout(location = 0) in vec3 fragColor;
 layout(location = 0) out vec4 outColor;
+
 void main() {
-    outColor = vec4(fragColor, 1.0);
+    // Normalized coordinates
+    vec2 uv = gl_FragCoord.xy / ubo.resolution;
+    
+    // Time-varying color
+    vec3 color = 0.5 + 0.5 * cos(ubo.time + uv.xyx + vec3(0, 2, 4));
+    
+    outColor = vec4(color, 1.0);
 }
 """
 
@@ -58,4 +72,4 @@ vkCreateSwapchainKHR = None
 vkGetSwapchainImagesKHR = None
 vkDestroySwapchainKHR = None
 vkAcquireNextImageKHR = None
-vkQueuePresentKHR = None   
+vkQueuePresentKHR = None

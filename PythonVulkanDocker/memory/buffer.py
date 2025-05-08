@@ -35,7 +35,6 @@ def create_buffer(app, size, usage, properties):
         
         # Print debug information
         print(f"DEBUG: Creating buffer - Size: {size}, Usage: {usage}, Properties: {properties}")
-        print(f"DEBUG: Device: {app.device}, Physical Device: {app.physicalDevice}")
         
         # Create buffer
         buffer_info = vk.VkBufferCreateInfo(
@@ -44,45 +43,34 @@ def create_buffer(app, size, usage, properties):
             sharingMode=vk.VK_SHARING_MODE_EXCLUSIVE
         )
         
-        try:
-            buffer = vk.vkCreateBuffer(app.device, buffer_info, None)
-            print(f"DEBUG: Buffer created: {buffer}")
-        except Exception as e:
-            print(f"ERROR: Failed to create buffer: {e}")
-            return None, None
+        print("DEBUG: Creating buffer with VkBufferCreateInfo")
+        buffer = vk.vkCreateBuffer(app.device, buffer_info, None)
+        print(f"DEBUG: Buffer created: {buffer}")
         
         # Get memory requirements
-        try:
-            mem_requirements = vk.vkGetBufferMemoryRequirements(app.device, buffer)
-            print(f"DEBUG: Memory requirements: size={mem_requirements.size}, alignment={mem_requirements.alignment}")
-        except Exception as e:
-            print(f"ERROR: Failed to get buffer memory requirements: {e}")
-            vk.vkDestroyBuffer(app.device, buffer, None)
-            return None, None
+        print("DEBUG: Getting buffer memory requirements")
+        mem_requirements = vk.vkGetBufferMemoryRequirements(app.device, buffer)
+        print(f"DEBUG: Memory requirements: size={mem_requirements.size}, alignment={mem_requirements.alignment}")
+        
+        # Find suitable memory type
+        print("DEBUG: Finding memory type")
+        memory_type_index = find_memory_type(app, mem_requirements.memoryTypeBits, properties)
+        print(f"DEBUG: Memory type index: {memory_type_index}")
         
         # Allocate memory
-        try:
-            alloc_info = vk.VkMemoryAllocateInfo(
-                allocationSize=mem_requirements.size,
-                memoryTypeIndex=find_memory_type(app, mem_requirements.memoryTypeBits, properties)
-            )
-            
-            memory = vk.vkAllocateMemory(app.device, alloc_info, None)
-            print(f"DEBUG: Memory allocated: {memory}")
-        except Exception as e:
-            print(f"ERROR: Failed to allocate buffer memory: {e}")
-            vk.vkDestroyBuffer(app.device, buffer, None)
-            return None, None
+        alloc_info = vk.VkMemoryAllocateInfo(
+            allocationSize=mem_requirements.size,
+            memoryTypeIndex=memory_type_index
+        )
+        
+        print("DEBUG: Allocating memory")
+        memory = vk.vkAllocateMemory(app.device, alloc_info, None)
+        print(f"DEBUG: Memory allocated: {memory}")
         
         # Bind memory to buffer
-        try:
-            vk.vkBindBufferMemory(app.device, buffer, memory, 0)
-            print("DEBUG: Memory bound to buffer successfully")
-        except Exception as e:
-            print(f"ERROR: Failed to bind buffer memory: {e}")
-            vk.vkFreeMemory(app.device, memory, None)
-            vk.vkDestroyBuffer(app.device, buffer, None)
-            return None, None
+        print("DEBUG: Binding memory to buffer")
+        vk.vkBindBufferMemory(app.device, buffer, memory, 0)
+        print("DEBUG: Memory bound to buffer successfully")
         
         return buffer, memory
     except Exception as e:

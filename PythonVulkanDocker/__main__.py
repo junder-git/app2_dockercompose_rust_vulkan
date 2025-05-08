@@ -12,6 +12,7 @@ import glfw
 
 # Import configurations
 from .config import *
+from .utils.shader_hot_reload import ShaderHotReload
 
 class PythonVulkanDocker:
     """Main Vulkan application class"""
@@ -41,6 +42,7 @@ class PythonVulkanDocker:
         
         # Rendering
         self.renderPass = None
+        self.descriptorSetLayout = None
         self.pipelineLayout = None
         self.graphicsPipeline = None
         self.swapChainFramebuffers = []
@@ -53,6 +55,13 @@ class PythonVulkanDocker:
         self.vertexBuffer = None
         self.vertexBufferMemory = None
         
+        # Uniform buffers
+        self.uniformBuffers = []
+        self.uniformBuffersMemory = []
+        self.uniformBufferMapped = []
+        self.descriptorPool = None
+        self.descriptorSets = []
+        
         # Synchronization
         self.imageAvailableSemaphores = []
         self.renderFinishedSemaphores = []
@@ -61,6 +70,12 @@ class PythonVulkanDocker:
         
         # Debug counters
         self.frameCount = 0
+        
+        # Shader reload system
+        self.shader_hot_reload = None
+        
+        # Timing
+        self.startTime = 0
         
         # Initialize window
         self.init_window()
@@ -163,6 +178,17 @@ class PythonVulkanDocker:
             print("ERROR: Failed to initialize Vulkan")
             return
             
+        # Initialize shader hot reload system if external shader files are available
+        if hasattr(self, 'shader_files'):
+            shader_files = {k: v for k, v in self.shader_files.items() if v is not None}
+            if shader_files:
+                print(f"DEBUG: Setting up shader hot reload for: {shader_files}")
+                self.shader_hot_reload = ShaderHotReload(self, shader_files)
+                self.shader_hot_reload.start()
+                print("DEBUG: Shader hot reload system started")
+            else:
+                print("DEBUG: No external shader files found, hot reload disabled")
+        
         try:
             print("DEBUG: Entering main loop")
             while not glfw.window_should_close(self.window):
@@ -173,7 +199,7 @@ class PythonVulkanDocker:
                     break
                     
                 # For debugging, limit how long we run
-                if self.frameCount >= 500:  # Limit to 500 frames
+                if self.frameCount >= 10000:  # Increased limit for longer testing
                     print("DEBUG: Frame limit reached, exiting")
                     break
                     
@@ -181,6 +207,11 @@ class PythonVulkanDocker:
             print(f"ERROR in main loop: {e}")
             traceback.print_exc()
         finally:
+            # Stop shader hot reload system
+            if self.shader_hot_reload:
+                self.shader_hot_reload.stop()
+                print("DEBUG: Shader hot reload system stopped")
+                
             self.cleanup()
 
 def main():

@@ -33,19 +33,19 @@ def create_logical_device(app):
         # Required extensions
         deviceExtensions = [vk.VK_KHR_SWAPCHAIN_EXTENSION_NAME]
         
-        # Create device info
+        # Check signature
+        import inspect
+        print(f"DEBUG: vkCreateDevice signature: {inspect.signature(vk.vkCreateDevice)}")
+        
+        # Create device info without validation layers
         createInfo = vk.VkDeviceCreateInfo(
             queueCreateInfoCount=len(queueCreateInfos),
             pQueueCreateInfos=queueCreateInfos,
             enabledExtensionCount=len(deviceExtensions),
             ppEnabledExtensionNames=deviceExtensions,
-            pEnabledFeatures=deviceFeatures
+            pEnabledFeatures=deviceFeatures,
+            enabledLayerCount=0  # No validation layers at the device level
         )
-        
-        # Add validation layers if enabled
-        if ENABLE_VALIDATION_LAYERS:
-            createInfo.enabledLayerCount = len(VALIDATION_LAYERS)
-            createInfo.ppEnabledLayerNames = VALIDATION_LAYERS
         
         # Create the logical device
         app.device = vk.vkCreateDevice(app.physicalDevice, createInfo, None)

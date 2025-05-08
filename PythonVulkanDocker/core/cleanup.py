@@ -6,6 +6,7 @@ from PythonVulkanDocker.config import (
     vkDestroySurfaceKHR
 )
 from ..rendering.swap_chain import cleanup_swap_chain
+from ..memory.uniform_buffer import cleanup_uniform_buffers
 
 def cleanup(app):
     """Clean up Vulkan resources"""
@@ -28,6 +29,17 @@ def cleanup(app):
         # Clean up command pool
         if app.commandPool:
             vk.vkDestroyCommandPool(app.device, app.commandPool, None)
+        
+        # Clean up uniform buffers
+        if hasattr(app, 'uniformBuffers'):
+            cleanup_uniform_buffers(app)
+        
+        # Clean up descriptor pool and descriptor set layout
+        if hasattr(app, 'descriptorPool') and app.descriptorPool:
+            vk.vkDestroyDescriptorPool(app.device, app.descriptorPool, None)
+            
+        if hasattr(app, 'descriptorSetLayout') and app.descriptorSetLayout:
+            vk.vkDestroyDescriptorSetLayout(app.device, app.descriptorSetLayout, None)
         
         # Clean up vertex buffer
         if app.vertexBuffer:

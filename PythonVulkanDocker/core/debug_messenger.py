@@ -1,4 +1,5 @@
 import vulkan as vk
+import ctypes
 from PythonVulkanDocker.config import ENABLE_VALIDATION_LAYERS
 
 def setup_debug_messenger(app):
@@ -9,11 +10,33 @@ def setup_debug_messenger(app):
     print("DEBUG: Setting up debug messenger")
     
     def debugCallback(severity, msgType, callbackData, userData):
-        message = callbackData.pMessage
+        # Try to extract the message from callbackData
+        try:
+            # Direct access to pMessage as a string
+            if hasattr(callbackData, 'pMessage'):
+                if isinstance(callbackData.pMessage, str):
+                    message = callbackData.pMessage
+                else:
+                    # For CFFI pointer, convert using ctypes
+                    try:
+                        message = ctypes.cast(callbackData.pMessage, ctypes.c_char_p).value.decode('utf-8')
+                    except:
+                        message = f"<Message extraction failed for pointer: {callbackData.pMessage}>"
+            else:
+                message = "<No pMessage in callbackData>"
+        except Exception as e:
+            message = f"<Error extracting message: {e}>"
+        
+        # Log based on severity
         if severity & vk.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
             print(f"VALIDATION ERROR: {message}")
         elif severity & vk.VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
             print(f"VALIDATION WARNING: {message}")
+        elif severity & vk.VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+            print(f"VALIDATION INFO: {message}")
+        elif severity & vk.VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+            print(f"VALIDATION VERBOSE: {message}")
+        
         return vk.VK_FALSE
     
     createInfo = vk.VkDebugUtilsMessengerCreateInfoEXT(

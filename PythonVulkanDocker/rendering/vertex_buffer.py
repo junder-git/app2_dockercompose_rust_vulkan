@@ -19,8 +19,10 @@ def create_vertex_buffer(app):
         # Get buffer size in bytes
         buffer_size = VERTICES.nbytes
         print(f"DEBUG: Vertex buffer size: {buffer_size} bytes")
+        print(f"DEBUG: VERTICES data: {VERTICES}")
         
         # Create staging buffer
+        print("DEBUG: Creating staging buffer")
         staging_buffer, staging_buffer_memory = create_buffer(
             app,
             buffer_size,
@@ -33,39 +35,37 @@ def create_vertex_buffer(app):
             print("ERROR: Failed to create staging buffer")
             return False
         
+        print(f"DEBUG: Staging buffer created: {staging_buffer}")
+        
         # Map memory and copy vertices
         try:
+            print("DEBUG: Mapping memory")
             # Try to map memory
             mapped_memory = vk.vkMapMemory(
-                device=app.device, 
-                memory=staging_buffer_memory, 
+                app.device, 
+                staging_buffer_memory, 
                 offset=0, 
                 size=buffer_size, 
                 flags=0
             )
             
-            print(f"DEBUG: vkMapMemory result type: {type(mapped_memory)}")
-            print(f"DEBUG: vkMapMemory result: {mapped_memory}")
+            print(f"DEBUG: Memory mapped: {mapped_memory}")
             
-            # Check if mapping was successful
-            if mapped_memory is None:
-                print("ERROR: Memory mapping returned None")
-                return False
-            
-            # Direct memory copy using low-level techniques
+            # Simple memory copy using ctypes
             try:
-                import cffi
-                ffi = cffi.FFI()
+                print("DEBUG: Copying vertex data to mapped memory")
                 
-                # Convert numpy array to bytes
-                vertex_bytes = VERTICES.tobytes()
+                # Get vertex data as bytes
+                vertex_data_ptr = VERTICES.ctypes.data_as(ctypes.POINTER(ctypes.c_ubyte))
                 
-                # Create a buffer from the vertex bytes
-                vertex_buffer = ffi.from_buffer("char[]", vertex_bytes)
+                # Create a buffer view of the mapped memory
+                dst_ptr = ctypes.cast(mapped_memory, ctypes.POINTER(ctypes.c_ubyte))
                 
-                # Perform memory copy using FFI
-                ffi.memmove(mapped_memory, vertex_buffer, buffer_size)
+                # Copy bytes
+                for i in range(buffer_size):
+                    dst_ptr[i] = vertex_data_ptr[i]
                 
+                print("DEBUG: Vertex data copied to staging buffer")
             except Exception as copy_error:
                 print(f"ERROR: Memory copy failed: {copy_error}")
                 traceback.print_exc()
@@ -73,6 +73,7 @@ def create_vertex_buffer(app):
                 return False
             
             # Unmap memory
+            print("DEBUG: Unmapping memory")
             vk.vkUnmapMemory(app.device, staging_buffer_memory)
             
         except Exception as map_error:
@@ -83,6 +84,7 @@ def create_vertex_buffer(app):
             return False
         
         # Create device local buffer (faster access for the GPU)
+        print("DEBUG: Creating vertex buffer (device local)")
         app.vertexBuffer, app.vertexBufferMemory = create_buffer(
             app,
             buffer_size,
@@ -97,11 +99,16 @@ def create_vertex_buffer(app):
             vk.vkFreeMemory(app.device, staging_buffer_memory, None)
             return False
         
+        print(f"DEBUG: Vertex buffer created: {app.vertexBuffer}")
+        
         # Copy from staging buffer to vertex buffer
         try:
+            print("DEBUG: Copying staging buffer to vertex buffer")
             copy_buffer(app, staging_buffer, app.vertexBuffer, buffer_size)
+            print("DEBUG: Buffer copy complete")
         except Exception as e:
             print(f"ERROR: Failed to copy buffer: {e}")
+            traceback.print_exc()
             vk.vkDestroyBuffer(app.device, staging_buffer, None)
             vk.vkFreeMemory(app.device, staging_buffer_memory, None)
             vk.vkDestroyBuffer(app.device, app.vertexBuffer, None)
@@ -109,6 +116,7 @@ def create_vertex_buffer(app):
             return False
         
         # Cleanup staging buffer
+        print("DEBUG: Cleaning up staging buffer")
         vk.vkDestroyBuffer(app.device, staging_buffer, None)
         vk.vkFreeMemory(app.device, staging_buffer_memory, None)
         

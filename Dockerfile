@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y \
     git \
     cmake \
     g++ \
+    vulkan-validationlayers \
+    spirv-tools \              
     && rm -rf /var/lib/apt/lists/*
 
 # Install glslangValidator
@@ -27,11 +29,12 @@ RUN wget https://github.com/KhronosGroup/glslang/releases/download/master-tot/gl
 # Install Python packages
 RUN pip install numpy vulkan glfw cffi
 
-# Create and set working directory
+# Create working directory
 WORKDIR /app
 
-# Copy your Vulkan application files
+# Copy your application files
 COPY PythonVulkanDocker /app/PythonVulkanDocker
+COPY *.glsl /app/
 
 # Set display for X forwarding
 ENV DISPLAY=host.docker.internal:0.0
