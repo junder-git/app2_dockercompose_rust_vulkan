@@ -66,12 +66,15 @@ COPY . /app
 ENV ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1
 # Set display for X forwarding
 ENV DISPLAY=host.docker.internal:0.0
-# Add these lines to your Dockerfile
+ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
 ENV VK_DRIVER=nvidia
 ENV VK_LAYER_PATH=/usr/share/vulkan/explicit_layer.d
-ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
 ENV VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
 ENV VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+ENV VK_LAYER_PATH=/usr/share/vulkan/explicit_layer.d
+ENV VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation
+ENV LIBGL_ALWAYS_SOFTWARE=1
+ENV MESA_GL_VERSION_OVERRIDE=3.3
 
 # Verify Python package imports with error handling
 RUN python -c "import setuptools; print('Setuptools import successful')" \

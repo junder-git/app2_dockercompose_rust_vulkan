@@ -188,74 +188,35 @@ def query_swap_chain_support(app, device):
         try:
             # Get surface capabilities
             support['capabilities'] = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, app.surface)
-            print(f"DEBUG: Surface capabilities retrieved: {support['capabilities']}")
+            print(f"DEBUG: Surface capabilities retrieved successfully")
         except Exception as e:
             print(f"ERROR: Failed to get surface capabilities: {e}")
+            import traceback
             traceback.print_exc()
             return support
         
         try:
             # Get surface formats - using a safer approach
             formats = vkGetPhysicalDeviceSurfaceFormatsKHR(device, app.surface)
-            print(f"DEBUG: Surface formats retrieved: {len(formats)} formats")
+            print(f"DEBUG: Surface formats retrieved: {len(formats) if formats else 0} formats")
             
             # Create a list of manually constructed format objects
             if formats and len(formats) > 0:
-                safe_formats = []
-                try:
-                    for i, fmt in enumerate(formats):
-                        # Access format properties directly and print them for debugging
-                        try:
-                            format_value = getattr(fmt, 'format', None)
-                            color_space = getattr(fmt, 'colorSpace', None)
-                            print(f"DEBUG: Format {i}: format={format_value}, colorSpace={color_space}")
-                            
-                            # Create a clean format object
-                            if format_value is not None and color_space is not None:
-                                # Create a new VkSurfaceFormatKHR with the extracted values
-                                safe_format = vk.VkSurfaceFormatKHR(
-                                    format=format_value,
-                                    colorSpace=color_space
-                                )
-                                safe_formats.append(safe_format)
-                        except Exception as attr_error:
-                            print(f"ERROR accessing format attributes: {attr_error}")
-                            traceback.print_exc()
-                    
-                    # Use the safe formats
-                    if safe_formats:
-                        support['formats'] = safe_formats
-                        print(f"DEBUG: Successfully processed {len(safe_formats)} surface formats")
-                    else:
-                        print("WARNING: Failed to process any surface formats")
-                        # Fallback to default formats
-                        default_format = vk.VkSurfaceFormatKHR(
-                            format=vk.VK_FORMAT_B8G8R8A8_UNORM,
-                            colorSpace=vk.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
-                        )
-                        support['formats'] = [default_format]
-                        print("DEBUG: Using fallback surface format")
-                except Exception as fmt_error:
-                    print(f"ERROR in format processing: {fmt_error}")
-                    traceback.print_exc()
-                    # Fallback to default formats
-                    default_format = vk.VkSurfaceFormatKHR(
-                        format=vk.VK_FORMAT_B8G8R8A8_UNORM,
-                        colorSpace=vk.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
-                    )
-                    support['formats'] = [default_format]
-                    print("DEBUG: Using fallback surface format after error")
+                # Use the formats directly if they appear valid
+                support['formats'] = formats
+                print(f"DEBUG: Successfully processed {len(support['formats'])} surface formats")
             else:
-                print(f"WARNING: Invalid or empty formats list: {formats}")
+                print("WARNING: No valid surface formats found")
                 # Fallback to default formats
                 default_format = vk.VkSurfaceFormatKHR(
                     format=vk.VK_FORMAT_B8G8R8A8_UNORM,
                     colorSpace=vk.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
                 )
                 support['formats'] = [default_format]
-                print("DEBUG: Using fallback surface format due to empty list")
+                print("DEBUG: Using fallback surface format")
         except Exception as e:
             print(f"ERROR: Failed to get surface formats: {e}")
+            import traceback
             traceback.print_exc()
             # Fallback to default formats
             default_format = vk.VkSurfaceFormatKHR(
@@ -268,37 +229,44 @@ def query_swap_chain_support(app, device):
         try:
             # Get presentation modes with safer error handling
             modes = vkGetPhysicalDeviceSurfacePresentModesKHR(device, app.surface)
-            print(f"DEBUG: Surface present modes retrieved: {len(modes)} modes")
             
-            if modes and isinstance(modes, (list, tuple)):
-                try:
-                    # Create a list of the presentation modes
+            # FIX: Check if modes is a valid sequence and extract values safely
+            if modes is not None:
+                if hasattr(modes, '__len__'):
+                    print(f"DEBUG: Retrieved {len(modes)} present modes")
+                    # Create a safe list of present modes
                     safe_modes = []
                     for i, mode in enumerate(modes):
-                        print(f"DEBUG: Present Mode {i}: {mode}")
-                        safe_modes.append(mode)
+                        try:
+                            mode_value = int(mode)  # Convert to integer if it's a cdata object
+                            safe_modes.append(mode_value)
+                            print(f"DEBUG: Present Mode {i}: {mode_value}")
+                        except (TypeError, ValueError) as e:
+                            print(f"WARNING: Could not process present mode {i}: {e}")
                     
                     if safe_modes:
                         support['presentModes'] = safe_modes
-                        print(f"DEBUG: Successfully processed {len(safe_modes)} present modes")
                     else:
-                        print("WARNING: Failed to process any present modes")
-                        # Fallback to FIFO which is guaranteed to be available
+                        # Fallback to FIFO mode which is guaranteed
+                        print("WARNING: Could not extract any present modes, using FIFO fallback")
                         support['presentModes'] = [vk.VK_PRESENT_MODE_FIFO_KHR]
-                        print("DEBUG: Using fallback FIFO present mode")
-                except Exception as mode_error:
-                    print(f"ERROR in present mode processing: {mode_error}")
-                    traceback.print_exc()
-                    # Fallback to FIFO which is guaranteed to be available
-                    support['presentModes'] = [vk.VK_PRESENT_MODE_FIFO_KHR]
-                    print("DEBUG: Using fallback FIFO present mode after error")
+                else:
+                    print(f"WARNING: Present modes object has no length attribute: {type(modes)}")
+                    # Try to create a single element list if modes is a single value
+                    try:
+                        mode_value = int(modes)
+                        support['presentModes'] = [mode_value]
+                        print(f"DEBUG: Using single present mode: {mode_value}")
+                    except (TypeError, ValueError):
+                        print("WARNING: Could not convert modes to integer, using FIFO fallback")
+                        support['presentModes'] = [vk.VK_PRESENT_MODE_FIFO_KHR]
             else:
-                print(f"WARNING: Invalid or empty present modes list: {modes}")
-                # Fallback to FIFO which is guaranteed to be available
+                print("WARNING: No present modes returned, using FIFO fallback")
                 support['presentModes'] = [vk.VK_PRESENT_MODE_FIFO_KHR]
-                print("DEBUG: Using fallback FIFO present mode due to empty list")
+                
         except Exception as e:
             print(f"ERROR: Failed to get surface present modes: {e}")
+            import traceback
             traceback.print_exc()
             # Fallback to FIFO which is guaranteed to be available
             support['presentModes'] = [vk.VK_PRESENT_MODE_FIFO_KHR]
@@ -307,16 +275,15 @@ def query_swap_chain_support(app, device):
         return support
     except Exception as e:
         print(f"ERROR: Unexpected error in query_swap_chain_support: {e}")
+        import traceback
         traceback.print_exc()
         
         # Return a minimal support structure with fallback values
-        capabilities = None
-        default_format = vk.VkSurfaceFormatKHR(
-            format=vk.VK_FORMAT_B8G8R8A8_UNORM,
-            colorSpace=vk.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
-        )
         return {
-            'capabilities': capabilities,
-            'formats': [default_format],
+            'capabilities': None,
+            'formats': [vk.VkSurfaceFormatKHR(
+                format=vk.VK_FORMAT_B8G8R8A8_UNORM,
+                colorSpace=vk.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+            )],
             'presentModes': [vk.VK_PRESENT_MODE_FIFO_KHR]
         }
