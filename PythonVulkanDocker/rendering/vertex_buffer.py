@@ -40,8 +40,9 @@ def create_vertex_buffer(app):
         # Map memory and copy vertices
         try:
             print("DEBUG: Mapping memory")
-            # Try to map memory
-            mapped_memory = vk.vkMapMemory(
+            
+            # Map memory
+            memory_pointer = vk.vkMapMemory(
                 app.device, 
                 staging_buffer_memory, 
                 offset=0, 
@@ -49,23 +50,29 @@ def create_vertex_buffer(app):
                 flags=0
             )
             
-            print(f"DEBUG: Memory mapped: {mapped_memory}")
+            print(f"DEBUG: Memory mapped: {memory_pointer}")
             
-            # Simple memory copy using ctypes
+            # Copy vertex data - use a different approach that works with the Python Vulkan bindings
             try:
-                print("DEBUG: Copying vertex data to mapped memory")
+                print("DEBUG: Getting vertex data as bytes")
+                # Get raw bytes from numpy array
+                vertex_data_bytes = VERTICES.tobytes()
                 
-                # Get vertex data as bytes
-                vertex_data_ptr = VERTICES.ctypes.data_as(ctypes.POINTER(ctypes.c_ubyte))
+                print("DEBUG: Creating FFI object")
+                # Use CFFI to handle the memory copy
+                from cffi import FFI
+                ffi = FFI()
                 
-                # Create a buffer view of the mapped memory
-                dst_ptr = ctypes.cast(mapped_memory, ctypes.POINTER(ctypes.c_ubyte))
+                print("DEBUG: Creating buffer view")
+                # Create a view of our vertex data
+                vertex_buffer = ffi.from_buffer(vertex_data_bytes)
                 
-                # Copy bytes
-                for i in range(buffer_size):
-                    dst_ptr[i] = vertex_data_ptr[i]
+                print("DEBUG: Copying data to mapped memory")
+                # Copy the data to the mapped memory
+                ffi.memmove(memory_pointer, vertex_buffer, buffer_size)
                 
-                print("DEBUG: Vertex data copied to staging buffer")
+                print("DEBUG: Data copy complete")
+                
             except Exception as copy_error:
                 print(f"ERROR: Memory copy failed: {copy_error}")
                 traceback.print_exc()

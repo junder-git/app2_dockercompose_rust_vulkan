@@ -4,8 +4,32 @@ import numpy as np
 import ctypes
 from .memory_type import find_memory_type
 
+def align_size(size, alignment):
+    """
+    Align a size to the next multiple of alignment
+    
+    Args:
+        size (int): Original size
+        alignment (int): Alignment requirement
+    
+    Returns:
+        int: Aligned size
+    """
+    return (size + alignment - 1) & ~(alignment - 1)
+
 def create_buffer(app, size, usage, properties):
-    """Helper function to create a buffer"""
+    """
+    Create a Vulkan buffer with robust size and alignment handling
+    
+    Args:
+        app: Application context
+        size (int): Size of the buffer in bytes
+        usage (int): Buffer usage flags
+        properties (int): Memory property flags
+    
+    Returns:
+        Tuple of (buffer, memory) or (None, None) if creation fails
+    """
     try:
         # Validate input types
         if not isinstance(size, int):
@@ -33,47 +57,64 @@ def create_buffer(app, size, usage, properties):
             print("ERROR: App object does not have a physicalDevice attribute")
             return None, None
         
-        # Print debug information
-        print(f"DEBUG: Creating buffer - Size: {size}, Usage: {usage}, Properties: {properties}")
+        # Detailed logging of input parameters
+        print(f"DEBUG: Creating buffer")
+        print(f"  Original Size: {size} bytes")
         
-        # Create buffer
+        # Create buffer info
         buffer_info = vk.VkBufferCreateInfo(
             size=size,
             usage=usage,
             sharingMode=vk.VK_SHARING_MODE_EXCLUSIVE
         )
         
-        print("DEBUG: Creating buffer with VkBufferCreateInfo")
+        # Create the buffer
         buffer = vk.vkCreateBuffer(app.device, buffer_info, None)
-        print(f"DEBUG: Buffer created: {buffer}")
         
         # Get memory requirements
-        print("DEBUG: Getting buffer memory requirements")
         mem_requirements = vk.vkGetBufferMemoryRequirements(app.device, buffer)
-        print(f"DEBUG: Memory requirements: size={mem_requirements.size}, alignment={mem_requirements.alignment}")
+        
+        # Detailed logging of memory requirements
+        print("  Memory Requirements:")
+        print(f"    Size: {mem_requirements.size} bytes")
+        print(f"    Alignment: {mem_requirements.alignment} bytes")
+        print(f"    Memory Type Bits: {mem_requirements.memoryTypeBits}")
+        
+        # Adjust size to meet alignment requirements
+        adjusted_size = align_size(max(size, mem_requirements.size), mem_requirements.alignment)
+        
+        print(f"  Adjusted Size: {adjusted_size} bytes")
         
         # Find suitable memory type
-        print("DEBUG: Finding memory type")
-        memory_type_index = find_memory_type(app, mem_requirements.memoryTypeBits, properties)
-        print(f"DEBUG: Memory type index: {memory_type_index}")
+        memory_type_index = find_memory_type(
+            app, 
+            mem_requirements.memoryTypeBits, 
+            properties
+        )
         
         # Allocate memory
         alloc_info = vk.VkMemoryAllocateInfo(
-            allocationSize=mem_requirements.size,
+            allocationSize=adjusted_size,
             memoryTypeIndex=memory_type_index
         )
         
-        print("DEBUG: Allocating memory")
         memory = vk.vkAllocateMemory(app.device, alloc_info, None)
-        print(f"DEBUG: Memory allocated: {memory}")
         
         # Bind memory to buffer
-        print("DEBUG: Binding memory to buffer")
         vk.vkBindBufferMemory(app.device, buffer, memory, 0)
-        print("DEBUG: Memory bound to buffer successfully")
         
+        print("  Buffer and memory created successfully")
         return buffer, memory
+    
     except Exception as e:
         print(f"ERROR: Unexpected error in create_buffer: {e}")
         traceback.print_exc()
+        
+        # Cleanup if partial creation occurred
+        if 'buffer' in locals():
+            try:
+                vk.vkDestroyBuffer(app.device, buffer, None)
+            except:
+                pass
+        
         return None, None
