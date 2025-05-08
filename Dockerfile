@@ -16,29 +16,60 @@ RUN apt-get update && apt-get install -y \
     cmake \
     g++ \
     vulkan-validationlayers \
-    spirv-tools \  
-    glslang-tools \              
+    spirv-tools \
+    glslang-tools \
     && rm -rf /var/lib/apt/lists/*
 
-# Install glslangValidator
-RUN wget https://github.com/KhronosGroup/glslang/releases/download/master-tot/glslang-master-linux-Release.zip \
-    && unzip glslang-master-linux-Release.zip \
-    && mv bin/glslangValidator /usr/local/bin/ \
+# Install glslangValidator with comprehensive error handling and debugging
+RUN set -e \
+    && echo "Downloading glslang" \
+    && wget -O glslang.zip -q https://github.com/KhronosGroup/glslang/releases/download/master-tot/glslang-master-linux-Release.zip \
+    && echo "Unzipping glslang" \
+    && unzip -o -q glslang.zip \
+    && echo "Listing unzipped directory contents:" \
+    && find . -type f \
+    && echo "Attempting to locate glslangValidator" \
+    && find . -name "glslangValidator" \
+    && mkdir -p /usr/local/bin \
+    && VALIDATOR_PATH=$(find . -name "glslangValidator" | head -n 1) \
+    && if [ -z "$VALIDATOR_PATH" ]; then \
+        echo "ERROR: glslangValidator not found" && exit 1; \
+    fi \
+    && cp "$VALIDATOR_PATH" /usr/local/bin/glslangValidator \
     && chmod +x /usr/local/bin/glslangValidator \
-    && rm glslang-master-linux-Release.zip
+    && rm -rf glslang.zip glslang-master-linux-Release \
+    && /usr/local/bin/glslangValidator --version \
+    || (echo "glslangValidator installation failed" && exit 1)
 
-# Install Python packages
-RUN pip install numpy vulkan glfw cffi
+# Upgrade pip, setuptools, and wheel
+RUN pip install --upgrade pip setuptools wheel
+
+# Install Python packages with robust error handling
+RUN pip install --no-cache-dir \
+    numpy==1.23.5 \
+    cffi==1.16.0 \
+    glfw==2.6.0 \
+    setuptools \
+    && pip install --no-cache-dir vulkan==1.3.275.1 \
+    || (echo "Python package installation failed" && exit 1)
 
 # Create working directory
 WORKDIR /app
 
-# Copy your application files
-COPY PythonVulkanDocker /app/PythonVulkanDocker
-COPY *.glsl /app/
+# Copy project files
+COPY . /app
 
 # Set display for X forwarding
 ENV DISPLAY=host.docker.internal:0.0
 
-# Run your application
+# Verify Python package imports with error handling
+RUN python -c "import setuptools; print('Setuptools import successful')" \
+    && python -c "import glfw; print('GLFW import successful')" \
+    && python -c "import vulkan; print('Vulkan import successful')" \
+    || (echo "Import verification failed" && exit 1)
+
+# Ensure correct permissions
+RUN chmod +x /usr/local/bin/glslangValidator
+
+# Run the application
 CMD ["python", "-m", "PythonVulkanDocker"]
