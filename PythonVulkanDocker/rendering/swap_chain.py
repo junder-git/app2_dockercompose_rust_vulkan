@@ -33,14 +33,34 @@ def create_swap_chain(app):
         # Query swap chain support
         swapChainSupport = query_swap_chain_support(app, app.physicalDevice)
         
+        # Extensive logging of swap chain support
+        print("DEBUG: Swap Chain Support Details:")
+        print("  Capabilities:")
+        caps = swapChainSupport['capabilities']
+        if caps:
+            print(f"    Min Image Count: {caps.minImageCount}")
+            print(f"    Max Image Count: {caps.maxImageCount}")
+            print(f"    Current Extent: {caps.currentExtent.width}x{caps.currentExtent.height}")
+        
+        print("  Formats:")
+        for fmt in swapChainSupport['formats']:
+            print(f"    Format: {fmt.format}, Color Space: {fmt.colorSpace}")
+        
+        print("  Present Modes:")
+        for mode in swapChainSupport['presentModes']:
+            print(f"    Mode: {mode}")
+        
         # Choose swap surface format
         surfaceFormat = choose_swap_surface_format(swapChainSupport['formats'])
+        print(f"DEBUG: Selected Surface Format: {surfaceFormat.format}, Color Space: {surfaceFormat.colorSpace}")
         
         # Choose present mode
         presentMode = choose_swap_present_mode(swapChainSupport['presentModes'])
+        print(f"DEBUG: Selected Present Mode: {presentMode}")
         
         # Choose swap extent
         extent = choose_swap_extent(app, swapChainSupport['capabilities'])
+        print(f"DEBUG: Selected Extent: {extent.width}x{extent.height}")
         
         # Decide how many images we want in the swap chain
         imageCount = swapChainSupport['capabilities'].minImageCount + 1
@@ -99,6 +119,7 @@ def create_swap_chain(app):
         # Attempt to create swap chain
         try:
             app.swapChain = vkCreateSwapchainKHR(app.device, createInfo, None)
+            print(f"DEBUG: Swap Chain Created: {app.swapChain}")
         except Exception as e:
             print(f"ERROR: Failed to create swap chain with vkCreateSwapchainKHR: {e}")
             return False
@@ -106,6 +127,16 @@ def create_swap_chain(app):
         # Get swap chain images
         try:
             app.swapChainImages = vkGetSwapchainImagesKHR(app.device, app.swapChain)
+            
+            # Detailed logging of swap chain images
+            print("DEBUG: Swap Chain Images:")
+            for i, image in enumerate(app.swapChainImages):
+                print(f"  Image {i}: {image}")
+            
+            if len(app.swapChainImages) == 0:
+                print("WARNING: No swap chain images were retrieved!")
+                return False
+            
         except Exception as e:
             print(f"ERROR: Failed to get swap chain images: {e}")
             return False
@@ -124,32 +155,53 @@ def create_swap_chain(app):
             
 def choose_swap_surface_format(availableFormats):
     """Choose the best surface format from available options"""
+    print("DEBUG: Choosing Surface Format")
+    print("Available Formats:")
+    for fmt in availableFormats:
+        print(f"  Format: {fmt.format}, Color Space: {fmt.colorSpace}")
+    
     # Prefer SRGB for better color accuracy
     for format in availableFormats:
         if (format.format == vk.VK_FORMAT_B8G8R8A8_SRGB and 
             format.colorSpace == vk.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR):
+            print("DEBUG: Preferred SRGB format selected")
             return format
             
     # If not found, just use the first one
+    print("DEBUG: Falling back to first available format")
     return availableFormats[0]
     
 def choose_swap_present_mode(availablePresentModes):
     """Choose the best presentation mode from available options"""
+    print("DEBUG: Available Present Modes:")
+    for mode in availablePresentModes:
+        print(f"  Mode: {mode}")
+    
     # Prefer mailbox mode (triple buffering) if available
     for mode in availablePresentModes:
         if mode == vk.VK_PRESENT_MODE_MAILBOX_KHR:
+            print("DEBUG: Selected Mailbox Present Mode")
             return mode
             
     # FIFO is guaranteed to be available
+    print("DEBUG: Falling back to FIFO Present Mode")
     return vk.VK_PRESENT_MODE_FIFO_KHR
     
 def choose_swap_extent(app, capabilities):
     """Choose the swap extent (resolution)"""
+    print("DEBUG: Choosing Swap Extent")
+    print("Capabilities:")
+    print(f"  Min Extent: {capabilities.minImageExtent.width}x{capabilities.minImageExtent.height}")
+    print(f"  Max Extent: {capabilities.maxImageExtent.width}x{capabilities.maxImageExtent.height}")
+    
+    # If width is already defined, use that
     if capabilities.currentExtent.width != 0xFFFFFFFF:
+        print("DEBUG: Using predefined current extent")
         return capabilities.currentExtent
         
     # Get the window size
     width, height = glfw.get_framebuffer_size(app.window)
+    print(f"DEBUG: Window Framebuffer Size: {width}x{height}")
     
     # Create an extent with the window size
     extent = vk.VkExtent2D(width=width, height=height)
@@ -159,24 +211,35 @@ def choose_swap_extent(app, capabilities):
                       min(capabilities.maxImageExtent.width, extent.width))
     extent.height = max(capabilities.minImageExtent.height, 
                        min(capabilities.maxImageExtent.height, extent.height))
-                       
+    
+    print(f"DEBUG: Final Clamped Extent: {extent.width}x{extent.height}")
     return extent
 
 def cleanup_swap_chain(app):
     """Clean up swap chain resources"""
     try:
+        # Detailed logging during cleanup
+        print("DEBUG: Cleaning up Swap Chain")
+        
         # Clean up framebuffers
-        for framebuffer in app.swapChainFramebuffers:
+        print("  Cleaning Framebuffers:")
+        for i, framebuffer in enumerate(app.swapChainFramebuffers):
+            print(f"    Framebuffer {i}: {framebuffer}")
             vk.vkDestroyFramebuffer(app.device, framebuffer, None)
-            
+        
         # Clean up image views
-        for imageView in app.swapChainImageViews:
+        print("  Cleaning Image Views:")
+        for i, imageView in enumerate(app.swapChainImageViews):
+            print(f"    Image View {i}: {imageView}")
             vk.vkDestroyImageView(app.device, imageView, None)
-            
+        
         # Clean up swap chain using the loaded extension function
         from PythonVulkanDocker.config import vkDestroySwapchainKHR
+        print(f"  Destroying Swap Chain: {app.swapChain}")
         vkDestroySwapchainKHR(app.device, app.swapChain, None)
         
         print("DEBUG: Swap chain cleanup successful")
     except Exception as e:
         print(f"ERROR in cleanupSwapChain: {e}")
+        import traceback
+        traceback.print_exc()

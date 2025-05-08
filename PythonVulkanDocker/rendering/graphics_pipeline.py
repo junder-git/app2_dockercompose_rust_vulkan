@@ -9,14 +9,39 @@ def create_graphics_pipeline(app):
     print("DEBUG: Creating graphics pipeline")
     
     try:
-        # Create shader modules using the helper function
-        vertShaderModule = create_shader_module_from_code(app.device, VERTEX_SHADER_CODE, 'vert')
-        fragShaderModule = create_shader_module_from_code(app.device, FRAGMENT_SHADER_CODE, 'frag')
+        # Validate required objects
+        required_objects = [
+            ('Device', app.device),
+            ('Swap Chain Extent', app.swapChainExtent),
+            ('Render Pass', app.renderPass)
+        ]
+        
+        for name, obj in required_objects:
+            if obj is None:
+                print(f"ERROR: {name} is not initialized")
+                return False
+        
+        # Extensive shader code logging
+        print("DEBUG: Vertex Shader Code:")
+        print(VERTEX_SHADER_CODE)
+        print("\nDEBUG: Fragment Shader Code:")
+        print(FRAGMENT_SHADER_CODE)
+        
+        # Create shader modules with detailed logging
+        try:
+            vertShaderModule = create_shader_module_from_code(app.device, VERTEX_SHADER_CODE, 'vert')
+            fragShaderModule = create_shader_module_from_code(app.device, FRAGMENT_SHADER_CODE, 'frag')
+        except Exception as shader_module_error:
+            print(f"ERROR: Failed to create shader modules: {shader_module_error}")
+            return False
         
         if not vertShaderModule or not fragShaderModule:
-            print("ERROR: Failed to create shader modules")
+            print("ERROR: Shader module creation failed")
             return False
-            
+        
+        print(f"  Vertex Shader Module: {vertShaderModule}")
+        print(f"  Fragment Shader Module: {fragShaderModule}")
+        
         # Shader stage info
         vertShaderStageInfo = vk.VkPipelineShaderStageCreateInfo(
             stage=vk.VK_SHADER_STAGE_VERTEX_BIT,
@@ -39,6 +64,12 @@ def create_graphics_pipeline(app):
             inputRate=vk.VK_VERTEX_INPUT_RATE_VERTEX
         )
         
+        # Detailed logging of binding description
+        print("DEBUG: Vertex Input Binding:")
+        print(f"  Binding: {bindingDescription.binding}")
+        print(f"  Stride: {bindingDescription.stride} bytes")
+        print(f"  Input Rate: {bindingDescription.inputRate}")
+        
         # Attribute descriptions
         positionAttribute = vk.VkVertexInputAttributeDescription(
             binding=0,
@@ -56,6 +87,15 @@ def create_graphics_pipeline(app):
         
         attributeDescriptions = [positionAttribute, colorAttribute]
         
+        # Detailed logging of attribute descriptions
+        print("DEBUG: Vertex Input Attributes:")
+        for i, attr in enumerate(attributeDescriptions):
+            print(f"  Attribute {i}:")
+            print(f"    Binding: {attr.binding}")
+            print(f"    Location: {attr.location}")
+            print(f"    Format: {attr.format}")
+            print(f"    Offset: {attr.offset}")
+        
         # Vertex input state
         vertexInputInfo = vk.VkPipelineVertexInputStateCreateInfo(
             vertexBindingDescriptionCount=1,
@@ -69,6 +109,10 @@ def create_graphics_pipeline(app):
             topology=vk.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
             primitiveRestartEnable=vk.VK_FALSE
         )
+        
+        print("DEBUG: Input Assembly:")
+        print(f"  Topology: {inputAssembly.topology}")
+        print(f"  Primitive Restart: {inputAssembly.primitiveRestartEnable}")
         
         # Viewport state
         viewport = vk.VkViewport(
@@ -84,6 +128,10 @@ def create_graphics_pipeline(app):
             offset=vk.VkOffset2D(x=0, y=0),
             extent=app.swapChainExtent
         )
+        
+        print("DEBUG: Viewport:")
+        print(f"  Dimensions: {viewport.width}x{viewport.height}")
+        print(f"  Depth Range: {viewport.minDepth}-{viewport.maxDepth}")
         
         viewportState = vk.VkPipelineViewportStateCreateInfo(
             viewportCount=1,
@@ -106,6 +154,11 @@ def create_graphics_pipeline(app):
             lineWidth=1.0
         )
         
+        print("DEBUG: Rasterization State:")
+        print(f"  Polygon Mode: {rasterizer.polygonMode}")
+        print(f"  Cull Mode: {rasterizer.cullMode}")
+        print(f"  Front Face: {rasterizer.frontFace}")
+        
         # Multisample state
         multisampling = vk.VkPipelineMultisampleStateCreateInfo(
             rasterizationSamples=vk.VK_SAMPLE_COUNT_1_BIT,
@@ -115,6 +168,10 @@ def create_graphics_pipeline(app):
             alphaToCoverageEnable=vk.VK_FALSE,
             alphaToOneEnable=vk.VK_FALSE
         )
+        
+        print("DEBUG: Multisampling:")
+        print(f"  Samples: {multisampling.rasterizationSamples}")
+        print(f"  Sample Shading: {multisampling.sampleShadingEnable}")
         
         # Color blend attachment
         colorBlendAttachment = vk.VkPipelineColorBlendAttachmentState(
@@ -140,13 +197,22 @@ def create_graphics_pipeline(app):
             blendConstants=[0.0, 0.0, 0.0, 0.0]
         )
         
+        print("DEBUG: Color Blending:")
+        print(f"  Logic Op Enabled: {colorBlending.logicOpEnable}")
+        print(f"  Blend Constants: {colorBlending.blendConstants}")
+        
         # Pipeline layout
         pipelineLayoutInfo = vk.VkPipelineLayoutCreateInfo(
             setLayoutCount=0,
             pushConstantRangeCount=0
         )
         
-        app.pipelineLayout = vk.vkCreatePipelineLayout(app.device, pipelineLayoutInfo, None)
+        try:
+            app.pipelineLayout = vk.vkCreatePipelineLayout(app.device, pipelineLayoutInfo, None)
+            print(f"DEBUG: Pipeline Layout Created: {app.pipelineLayout}")
+        except Exception as layout_error:
+            print(f"ERROR: Failed to create pipeline layout: {layout_error}")
+            return False
         
         # Graphics pipeline
         pipelineInfo = vk.VkGraphicsPipelineCreateInfo(
@@ -168,11 +234,17 @@ def create_graphics_pipeline(app):
         )
         
         # Create the graphics pipeline
-        result = vk.vkCreateGraphicsPipelines(
-            app.device, None, 1, [pipelineInfo], None)
-        
-        # The result is a tuple (result, pipelines), we want the first pipeline
-        app.graphicsPipeline = result[0]
+        try:
+            result = vk.vkCreateGraphicsPipelines(
+                app.device, None, 1, [pipelineInfo], None)
+            
+            # The result is a tuple (result, pipelines), we want the first pipeline
+            app.graphicsPipeline = result[0]
+            
+            print(f"DEBUG: Graphics Pipeline Created: {app.graphicsPipeline}")
+        except Exception as pipeline_error:
+            print(f"ERROR: Failed to create graphics pipeline: {pipeline_error}")
+            return False
         
         # Clean up shader modules
         vk.vkDestroyShaderModule(app.device, vertShaderModule, None)
