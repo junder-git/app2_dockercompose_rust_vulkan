@@ -1,9 +1,12 @@
+# PythonVulkanDocker/core/logical_device.py
+# Updated to use the wrapper for safety
+
 import vulkan as vk
 from PythonVulkanDocker.config import ENABLE_VALIDATION_LAYERS, VALIDATION_LAYERS
 from .physical_device import find_queue_families
 
 def create_logical_device(app):
-    """Create logical device and queues"""
+    """Create logical device and queues with robust error handling"""
     print("DEBUG: Creating logical device")
     
     if app.physicalDevice is None:
@@ -33,10 +36,6 @@ def create_logical_device(app):
         # Required extensions
         deviceExtensions = [vk.VK_KHR_SWAPCHAIN_EXTENSION_NAME]
         
-        # Check signature
-        import inspect
-        print(f"DEBUG: vkCreateDevice signature: {inspect.signature(vk.vkCreateDevice)}")
-        
         # Create device info without validation layers
         createInfo = vk.VkDeviceCreateInfo(
             queueCreateInfoCount=len(queueCreateInfos),
@@ -50,9 +49,8 @@ def create_logical_device(app):
         # Create the logical device
         app.device = vk.vkCreateDevice(app.physicalDevice, createInfo, None)
         
-        # Load device extension functions
-        from PythonVulkanDocker.utils.vulkan_utils import load_device_extensions
-        load_device_extensions(app.device)
+        # Skip loading device extension functions - use instance-level functions
+        print("DEBUG: Skipping device extension loading to avoid crashes")
         
         # Get queue handles
         app.graphicsQueue = vk.vkGetDeviceQueue(
@@ -67,8 +65,22 @@ def create_logical_device(app):
             0
         )
         
+        print(f"DEBUG: Obtained graphics queue: {app.graphicsQueue}")
+        print(f"DEBUG: Obtained present queue: {app.presentQueue}")
+        
+        # Verify the queues were created successfully
+        if app.graphicsQueue is None:
+            print("ERROR: Failed to get graphics queue")
+            return False
+            
+        if app.presentQueue is None:
+            print("ERROR: Failed to get present queue")
+            return False
+        
         print("DEBUG: Logical device created successfully")
         return True
     except Exception as e:
         print(f"ERROR: Failed to create logical device: {e}")
+        import traceback
+        traceback.print_exc()
         return False

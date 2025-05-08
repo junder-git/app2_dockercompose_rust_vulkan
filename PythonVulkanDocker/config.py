@@ -1,3 +1,6 @@
+# PythonVulkanDocker/config.py
+# Updated with new flags and test mode
+
 #!/usr/bin/env python3
 """
 Vulkan Triangle Demo Application - Main Entry Point
@@ -16,12 +19,13 @@ import time  # Add this for timing information
 # Set to True to enable Vulkan validation layers
 ENABLE_VALIDATION_LAYERS = True  # Changed to True for better error reporting
 VALIDATION_LAYERS = ["VK_LAYER_KHRONOS_validation"]
-# Add these lines to the end of PythonVulkanDocker/config.py
-TEST_MODE = True  # Enable test mode with fallback objects
-DEBUG_VERBOSE = True  # Enable verbose debugging output
 
 # Maximum frames in flight
 MAX_FRAMES_IN_FLIGHT = 2
+
+# Frame rate settings
+TARGET_FPS = 60  # Limit to 60 FPS
+USE_FPS_LIMIT = True  # Enable FPS limiting
 
 # Triangle vertices
 VERTICES = np.array([
@@ -76,3 +80,8 @@ vkGetSwapchainImagesKHR = None
 vkDestroySwapchainKHR = None
 vkAcquireNextImageKHR = None
 vkQueuePresentKHR = None
+vkDestroySurfaceKHR = None
+
+# Testing and debugging flags
+TEST_MODE = False  # Set to True to enable test mode
+DEBUG_VERBOSE = False  # Set to True for more verbose debugging output

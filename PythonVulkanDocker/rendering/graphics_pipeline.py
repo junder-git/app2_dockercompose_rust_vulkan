@@ -5,46 +5,68 @@ import os
 from ..utils.shader_compilation import create_shader_module_from_file, create_shader_module_from_code
 from PythonVulkanDocker.config import VERTEX_SHADER_CODE, FRAGMENT_SHADER_CODE
 
+# Add this function to PythonVulkanDocker/rendering/graphics_pipeline.py
+
+def create_descriptor_set_layout(app):
+    """Create descriptor set layout for uniform values"""
+    try:
+        import vulkan as vk
+        
+        print("DEBUG: Creating descriptor set layout")
+        
+        binding = vk.VkDescriptorSetLayoutBinding(
+            binding=0,
+            descriptorType=vk.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            descriptorCount=1,
+            stageFlags=vk.VK_SHADER_STAGE_FRAGMENT_BIT,
+            pImmutableSamplers=None
+        )
+        
+        create_info = vk.VkDescriptorSetLayoutCreateInfo(
+            bindingCount=1,
+            pBindings=[binding]
+        )
+        
+        app.descriptorSetLayout = vk.vkCreateDescriptorSetLayout(app.device, create_info, None)
+        print("DEBUG: Descriptor set layout created successfully")
+        return True
+    except Exception as e:
+        print(f"ERROR: Failed to create descriptor set layout: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+# Replace create_graphics_pipeline in PythonVulkanDocker/rendering/graphics_pipeline.py
+
 def create_graphics_pipeline(app):
-    """Create graphics pipeline for rendering"""
-    print("DEBUG: Creating graphics pipeline")
+    """Create graphics pipeline with simplified shader handling"""
+    print("DEBUG: Creating graphics pipeline (simplified)")
     
     try:
-        # Try to use external shader files first
-        vertex_shader_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'vertex_shader.glsl')
-        fragment_shader_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'fragment_shader.glsl')
+        # Directly use built-in shaders
+        print("DEBUG: Using built-in shaders")
+        from PythonVulkanDocker.utils.shader_compilation import create_built_in_spirv
+        import vulkan as vk
+        import ctypes
         
-        print(f"DEBUG: Looking for vertex shader at: {vertex_shader_path}")
-        print(f"DEBUG: Looking for fragment shader at: {fragment_shader_path}")
+        # Create shader modules directly with built-in SPIR-V
+        vert_spv = create_built_in_spirv('vert')
+        frag_spv = create_built_in_spirv('frag')
         
-        # Check if shader files exist
-        use_external_vertex = os.path.exists(vertex_shader_path)
-        use_external_fragment = os.path.exists(fragment_shader_path)
+        vert_create_info = vk.VkShaderModuleCreateInfo(
+            codeSize=ctypes.sizeof(vert_spv),
+            pCode=vert_spv
+        )
         
-        # Create shader modules
-        if use_external_vertex:
-            print("DEBUG: Using external vertex shader file")
-            vertShaderModule = create_shader_module_from_file(app.device, vertex_shader_path, 'vert')
-        else:
-            print("DEBUG: Using built-in vertex shader code")
-            vertShaderModule = create_shader_module_from_code(app.device, VERTEX_SHADER_CODE, 'vert')
-            
-        if use_external_fragment:
-            print("DEBUG: Using external fragment shader file")
-            fragShaderModule = create_shader_module_from_file(app.device, fragment_shader_path, 'frag')
-        else:
-            print("DEBUG: Using built-in fragment shader code")
-            fragShaderModule = create_shader_module_from_code(app.device, FRAGMENT_SHADER_CODE, 'frag')
+        frag_create_info = vk.VkShaderModuleCreateInfo(
+            codeSize=ctypes.sizeof(frag_spv),
+            pCode=frag_spv
+        )
         
-        # Store shader paths for hot reloading
-        app.shader_files = {
-            'vert': vertex_shader_path if use_external_vertex else None,
-            'frag': fragment_shader_path if use_external_fragment else None
-        }
+        vertShaderModule = vk.vkCreateShaderModule(app.device, vert_create_info, None)
+        fragShaderModule = vk.vkCreateShaderModule(app.device, frag_create_info, None)
         
-        if not vertShaderModule or not fragShaderModule:
-            print("ERROR: Failed to create shader modules")
-            return False
+        print("DEBUG: Shader modules created successfully")
         
         # Create descriptor set layout for uniform buffer
         if not hasattr(app, 'descriptorSetLayout') or app.descriptorSetLayout is None:
@@ -160,7 +182,7 @@ def create_graphics_pipeline(app):
             alphaBlendOp=vk.VK_BLEND_OP_ADD,
             colorWriteMask=vk.VK_COLOR_COMPONENT_R_BIT |
                         vk.VK_COLOR_COMPONENT_G_BIT |
-                        vk.VK_COLOR_COMPONENT_B_BIT |
+                        vk.VK_COLOR_COMPONENT_B_BIT |  # Fix: VK_COLOR_COMPONENT_B_BIT, not VK_COMPONENT_B_BIT
                         vk.VK_COLOR_COMPONENT_A_BIT
         )
         
@@ -216,28 +238,6 @@ def create_graphics_pipeline(app):
         return True
     except Exception as e:
         print(f"ERROR: Failed to create graphics pipeline: {e}")
+        import traceback
         traceback.print_exc()
-        return False
-
-def create_descriptor_set_layout(app):
-    """Create descriptor set layout for uniform values"""
-    try:
-        binding = vk.VkDescriptorSetLayoutBinding(
-            binding=0,
-            descriptorType=vk.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            descriptorCount=1,
-            stageFlags=vk.VK_SHADER_STAGE_FRAGMENT_BIT,
-            pImmutableSamplers=None
-        )
-        
-        create_info = vk.VkDescriptorSetLayoutCreateInfo(
-            bindingCount=1,
-            pBindings=[binding]
-        )
-        
-        app.descriptorSetLayout = vk.vkCreateDescriptorSetLayout(app.device, create_info, None)
-        print("DEBUG: Descriptor set layout created successfully")
-        return True
-    except Exception as e:
-        print(f"ERROR: Failed to create descriptor set layout: {e}")
         return False

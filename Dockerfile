@@ -68,13 +68,25 @@ ENV ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_re
 ENV DISPLAY=host.docker.internal:0.0
 ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
 ENV VK_DRIVER=nvidia
-ENV VK_LAYER_PATH=/usr/share/vulkan/explicit_layer.d
-ENV VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
 ENV VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
 ENV VK_LAYER_PATH=/usr/share/vulkan/explicit_layer.d
 ENV VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation
-ENV LIBGL_ALWAYS_SOFTWARE=1
 ENV MESA_GL_VERSION_OVERRIDE=3.3
+# Flag to indicate Docker environment
+ENV DOCKER_CONTAINER=1
+# Essential environment variables for debugging
+ENV VK_LOADER_DEBUG=all
+ENV LIBGL_DEBUG=verbose
+ENV LIBGL_ALWAYS_SOFTWARE=1
+ENV MESA_DEBUG=1
+# Force software rendering
+ENV MESA_LOADER_DRIVER_OVERRIDE=swrast
+ENV GALLIUM_DRIVER=llvmpipe
+# Disable hardware acceleration for GLFW
+ENV GLFW_IM_MODULE=ibus
+# For headless operation (fallback)
+ENV VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+
 
 # Verify Python package imports with error handling
 RUN python -c "import setuptools; print('Setuptools import successful')" \

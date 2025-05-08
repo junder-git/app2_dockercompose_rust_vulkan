@@ -1,3 +1,6 @@
+# PythonVulkanDocker/core/init_vulkan.py
+# Updated to use the Vulkan helper
+
 import traceback
 from ..config import ENABLE_VALIDATION_LAYERS
 from .instance import create_instance
@@ -27,7 +30,7 @@ def init_vulkan(app):
             return False
         
         print("Step 2/13: Setting up debug messenger")
-        if app.validation_enabled:
+        if ENABLE_VALIDATION_LAYERS:
             if not setup_debug_messenger(app):
                 print("WARNING: Failed to set up debug messenger, continuing anyway")
         
@@ -108,7 +111,6 @@ def init_vulkan(app):
         
     except Exception as e:
         print(f"CRITICAL ERROR during Vulkan initialization: {e}")
-        import traceback
         traceback.print_exc()
         print("-------- VULKAN INITIALIZATION FAILED --------\n")
         return False
