@@ -1,7 +1,10 @@
 FROM python:3.9
 
+
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
+    libasan6 \
     libvulkan1 \
     vulkan-tools \
     mesa-vulkan-drivers \
@@ -59,6 +62,10 @@ WORKDIR /app
 # Copy project files
 COPY . /app
 
+# Set up environment variables for memory debugging
+ENV ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1
+# Add Vulkan ICD loader configuration
+ENV VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json:/usr/share/vulkan/icd.d/intel_icd.json:/usr/share/vulkan/icd.d/radeon_icd.json:/usr/share/vulkan/icd.d/lvp_icd.json
 # Set display for X forwarding
 ENV DISPLAY=host.docker.internal:0.0
 

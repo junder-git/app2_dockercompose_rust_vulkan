@@ -1,11 +1,18 @@
 #version 450
 
 // Vertex input attributes
-layout(location = 0) in vec3 inPosition;  // Position attribute
-layout(location = 1) in vec3 inColor;     // Color attribute
+layout(location = 0) in vec3 inPosition;
+layout(location = 1) in vec3 inColor;
 
 // Output to fragment shader
 layout(location = 0) out vec3 fragColor;
+
+// Uniform buffer object with explicit standard layout
+layout(std140, binding = 0) uniform UBO {
+    float time;
+    vec2 resolution;
+    float padding;
+} ubo;
 
 void main() {
     // Basic vertex transformation

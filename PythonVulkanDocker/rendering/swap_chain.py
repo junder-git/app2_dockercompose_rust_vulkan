@@ -6,7 +6,7 @@ from PythonVulkanDocker.config import vkCreateSwapchainKHR, vkGetSwapchainImages
 from ..core.physical_device import query_swap_chain_support, find_queue_families
 
 def create_swap_chain(app):
-    """Create swap chain for rendering"""
+    """Create swap chain for rendering with robust format handling"""
     print("DEBUG: Creating swap chain")
     
     if app.physicalDevice is None or app.device is None:
@@ -42,32 +42,67 @@ def create_swap_chain(app):
             print(f"    Max Image Count: {caps.maxImageCount}")
             print(f"    Current Extent: {caps.currentExtent.width}x{caps.currentExtent.height}")
         
+        # Add safer format logging - check if formats is a valid iterable
         print("  Formats:")
-        for fmt in swapChainSupport['formats']:
-            print(f"    Format: {fmt.format}, Color Space: {fmt.colorSpace}")
-        
+        formats = swapChainSupport['formats']
+        if formats and isinstance(formats, (list, tuple)) and len(formats) > 0:
+            try:
+                for i, fmt in enumerate(formats):
+                    if hasattr(fmt, 'format') and hasattr(fmt, 'colorSpace'):
+                        print(f"    Format {i}: {fmt.format}, Color Space: {fmt.colorSpace}")
+                    else:
+                        print(f"    Format {i}: {fmt} (unexpected format structure)")
+            except Exception as fmt_error:
+                print(f"ERROR in format enumeration: {fmt_error}")
+        else:
+            print(f"    No valid formats found or unexpected format structure: {formats}")
+            
+        # Add safer present mode logging
         print("  Present Modes:")
-        for mode in swapChainSupport['presentModes']:
-            print(f"    Mode: {mode}")
+        modes = swapChainSupport['presentModes']
+        if modes and isinstance(modes, (list, tuple)) and len(modes) > 0:
+            try:
+                for i, mode in enumerate(modes):
+                    print(f"    Mode {i}: {mode}")
+            except Exception as mode_error:
+                print(f"ERROR in present mode enumeration: {mode_error}")
+        else:
+            print(f"    No valid present modes found or unexpected mode structure: {modes}")
         
-        # Choose swap surface format
-        surfaceFormat = choose_swap_surface_format(swapChainSupport['formats'])
-        print(f"DEBUG: Selected Surface Format: {surfaceFormat.format}, Color Space: {surfaceFormat.colorSpace}")
-        
+        # Choose swap surface format with safer approach
+        if formats and isinstance(formats, (list, tuple)) and len(formats) > 0:
+            surfaceFormat = choose_swap_surface_format(formats)
+            print(f"DEBUG: Selected Surface Format: {surfaceFormat.format}, Color Space: {surfaceFormat.colorSpace}")
+        else:
+            print("ERROR: No valid surface formats available")
+            return False
+            
         # Choose present mode
-        presentMode = choose_swap_present_mode(swapChainSupport['presentModes'])
-        print(f"DEBUG: Selected Present Mode: {presentMode}")
-        
+        if modes and isinstance(modes, (list, tuple)) and len(modes) > 0:
+            presentMode = choose_swap_present_mode(modes)
+            print(f"DEBUG: Selected Present Mode: {presentMode}")
+        else:
+            print("ERROR: No valid present modes available")
+            return False
+            
         # Choose swap extent
-        extent = choose_swap_extent(app, swapChainSupport['capabilities'])
-        print(f"DEBUG: Selected Extent: {extent.width}x{extent.height}")
+        if caps:
+            extent = choose_swap_extent(app, caps)
+            print(f"DEBUG: Selected Extent: {extent.width}x{extent.height}")
+        else:
+            print("ERROR: No valid capabilities available")
+            return False
         
         # Decide how many images we want in the swap chain
-        imageCount = swapChainSupport['capabilities'].minImageCount + 1
-        
-        # Make sure we don't exceed the maximum
-        if swapChainSupport['capabilities'].maxImageCount > 0:
-            imageCount = min(imageCount, swapChainSupport['capabilities'].maxImageCount)
+        if caps:
+            imageCount = caps.minImageCount + 1
+            
+            # Make sure we don't exceed the maximum
+            if caps.maxImageCount > 0:
+                imageCount = min(imageCount, caps.maxImageCount)
+        else:
+            # Fallback to safe value
+            imageCount = 3
             
         print(f"DEBUG: Swap chain using {imageCount} images")
         
@@ -78,13 +113,17 @@ def create_swap_chain(app):
         graphicsFamily = indices.get('graphicsFamily')
         presentFamily = indices.get('presentFamily')
         
+        if graphicsFamily is None or presentFamily is None:
+            print("ERROR: Required queue families not found")
+            return False
+        
         # Default to exclusive mode
         imageSharingMode = vk.VK_SHARING_MODE_EXCLUSIVE
         queueFamilyIndexCount = 0
         pQueueFamilyIndices = None
         
         # If graphics and present families are different, use concurrent mode
-        if graphicsFamily is not None and presentFamily is not None and graphicsFamily != presentFamily:
+        if graphicsFamily != presentFamily:
             imageSharingMode = vk.VK_SHARING_MODE_CONCURRENT
             queueFamilyIndexCount = 2
             
@@ -104,7 +143,7 @@ def create_swap_chain(app):
             imageExtent=extent,
             imageArrayLayers=1,
             imageUsage=vk.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-            preTransform=swapChainSupport['capabilities'].currentTransform,
+            preTransform=caps.currentTransform,
             compositeAlpha=vk.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
             presentMode=presentMode,
             clipped=vk.VK_TRUE,
@@ -118,14 +157,17 @@ def create_swap_chain(app):
         
         # Attempt to create swap chain
         try:
+            print("DEBUG: Calling vkCreateSwapchainKHR")
             app.swapChain = vkCreateSwapchainKHR(app.device, createInfo, None)
             print(f"DEBUG: Swap Chain Created: {app.swapChain}")
         except Exception as e:
             print(f"ERROR: Failed to create swap chain with vkCreateSwapchainKHR: {e}")
+            traceback.print_exc()
             return False
         
         # Get swap chain images
         try:
+            print("DEBUG: Calling vkGetSwapchainImagesKHR")
             app.swapChainImages = vkGetSwapchainImagesKHR(app.device, app.swapChain)
             
             # Detailed logging of swap chain images
@@ -139,6 +181,7 @@ def create_swap_chain(app):
             
         except Exception as e:
             print(f"ERROR: Failed to get swap chain images: {e}")
+            traceback.print_exc()
             return False
         
         # Save format and extent

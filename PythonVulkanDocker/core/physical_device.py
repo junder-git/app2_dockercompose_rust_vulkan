@@ -152,7 +152,7 @@ def find_queue_families(app, device):
         return {}
 
 def query_swap_chain_support(app, device):
-    """Query swap chain support details"""
+    """Query swap chain support details with robust error handling"""
     try:
         # Import global functions to ensure they're loaded
         from PythonVulkanDocker.config import (
@@ -186,27 +186,50 @@ def query_swap_chain_support(app, device):
             print(f"DEBUG: Surface capabilities retrieved: {support['capabilities']}")
         except Exception as e:
             print(f"ERROR: Failed to get surface capabilities: {e}")
+            traceback.print_exc()
             return support
         
         try:
             # Get surface formats
-            support['formats'] = vkGetPhysicalDeviceSurfaceFormatsKHR(device, app.surface)
-            print(f"DEBUG: Surface formats retrieved: {len(support['formats'])} formats")
+            formats = vkGetPhysicalDeviceSurfaceFormatsKHR(device, app.surface)
+            print(f"DEBUG: Surface formats retrieved: {len(formats)} formats")
+            
+            # Validate format structure before storing
+            if formats and isinstance(formats, (list, tuple)):
+                # Check if it has the expected attributes
+                if len(formats) > 0 and hasattr(formats[0], 'format') and hasattr(formats[0], 'colorSpace'):
+                    support['formats'] = formats
+                else:
+                    print(f"WARNING: Unexpected format structure: {formats}")
+                    support['formats'] = []
+            else:
+                print(f"WARNING: Invalid format list: {formats}")
+                support['formats'] = []
         except Exception as e:
             print(f"ERROR: Failed to get surface formats: {e}")
+            traceback.print_exc()
             support['formats'] = []
         
         try:
             # Get presentation modes
-            support['presentModes'] = vkGetPhysicalDeviceSurfacePresentModesKHR(device, app.surface)
-            print(f"DEBUG: Surface present modes retrieved: {len(support['presentModes'])} modes")
+            modes = vkGetPhysicalDeviceSurfacePresentModesKHR(device, app.surface)
+            print(f"DEBUG: Surface present modes retrieved: {len(modes)} modes")
+            
+            # Validate mode structure before storing
+            if modes and isinstance(modes, (list, tuple)):
+                support['presentModes'] = modes
+            else:
+                print(f"WARNING: Invalid present mode list: {modes}")
+                support['presentModes'] = []
         except Exception as e:
             print(f"ERROR: Failed to get surface present modes: {e}")
+            traceback.print_exc()
             support['presentModes'] = []
         
         return support
     except Exception as e:
         print(f"ERROR: Unexpected error in query_swap_chain_support: {e}")
+        traceback.print_exc()
         return {
             'capabilities': None,
             'formats': [],

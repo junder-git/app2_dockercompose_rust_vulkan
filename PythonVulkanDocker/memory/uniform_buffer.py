@@ -9,7 +9,7 @@ def create_uniform_buffers(app):
     print("DEBUG: Creating uniform buffers")
     
     try:
-        # Structure to match shader uniform block
+        # Structure to match shader uniform block with std140 layout
         class UniformBufferObject(ctypes.Structure):
             _fields_ = [
                 ("time", ctypes.c_float),
@@ -99,7 +99,7 @@ def create_descriptor_sets(app):
             
             write_descriptor_set = vk.VkWriteDescriptorSet(
                 dstSet=descriptor_set,
-                dstBinding=0,
+                dstBinding=0,  # Make sure this matches the binding in the shader
                 dstArrayElement=0,
                 descriptorType=vk.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 descriptorCount=1,
@@ -135,6 +135,10 @@ def update_uniform_buffer(app, current_image):
         ubo.resolution[1] = float(app.swapChainExtent.height)
         ubo.padding = 0.0
         
+        # Print debug info occasionally
+        if int(current_time) % 5 == 0 and int(current_time * 10) % 10 == 0:
+            print(f"DEBUG: Updating UBO - Time: {current_time:.2f}, Resolution: {ubo.resolution[0]}x{ubo.resolution[1]}")
+        
         # Copy UBO to mapped memory
         mapped_memory = app.uniformBufferMapped[current_image]
         ctypes.memmove(mapped_memory, ctypes.addressof(ubo), ctypes.sizeof(ubo))
@@ -142,6 +146,7 @@ def update_uniform_buffer(app, current_image):
         return True
     except Exception as e:
         print(f"ERROR: Failed to update uniform buffer: {e}")
+        traceback.print_exc()
         return False
 
 def cleanup_uniform_buffers(app):
@@ -164,3 +169,4 @@ def cleanup_uniform_buffers(app):
         print("DEBUG: Uniform buffers cleaned up")
     except Exception as e:
         print(f"ERROR: Failed to clean up uniform buffers: {e}")
+        traceback.print_exc()
