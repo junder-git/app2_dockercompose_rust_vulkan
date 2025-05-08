@@ -1,5 +1,5 @@
 # PythonVulkanDocker/__main__.py
-# Modified version using the Vulkan helper
+# Simplified version using the Vulkan helper
 
 #!/usr/bin/env python3
 """
@@ -21,8 +21,12 @@ from .config import *
 # Import the Vulkan helper
 from .vulkan_helper import VulkanHelper
 
+# Import simplified rendering and cleanup
+from .rendering.draw_frame import draw_frame
+from .core.cleanup import cleanup
+
 class PythonVulkanDocker:
-    """Main Vulkan application class"""
+    """Main Vulkan application class using VulkanHelper"""
     def __init__(self, width=800, height=600, title="Vulkan Triangle"):
         """Initialize the Vulkan application"""
         # Window properties
@@ -37,11 +41,12 @@ class PythonVulkanDocker:
         # Application state
         self.running = False
         self.frameCount = 0
+        self.frameIndex = 0
         
         # Timing
         self.startTime = 0
         
-        # Logging
+        # Log initialization
         self.log_init_steps()
         
         # Initialize window
@@ -56,11 +61,11 @@ class PythonVulkanDocker:
         print(f"Title: {self.title}")
         print("Checking system capabilities:")
         print(f"  GLFW Version: {glfw.get_version_string()}")
-        print(f"  Vulkan Version: JINSERT.i.e.UNKNOWN")
+        print(f"  Using VulkanHelper for simplified setup")
         print("=" * 50)
 
     def init_window(self):
-        """Initialize GLFW window"""
+        """Initialize GLFW window using VulkanHelper"""
         print("DEBUG: Initializing GLFW window")
         # Create Vulkan helper
         self.vk_helper = VulkanHelper(self.width, self.height, self.title)
@@ -75,8 +80,16 @@ class PythonVulkanDocker:
 
     def init_vulkan(self):
         """Initialize Vulkan using the helper"""
-        print("DEBUG: Initializing Vulkan")
+        print("DEBUG: Initializing Vulkan via helper")
         return self.vk_helper.init_vulkan()
+
+    def draw_frame(self):
+        """Draw a frame using the simplified draw_frame function"""
+        return draw_frame(self)
+
+    def cleanup(self):
+        """Clean up resources using simplified cleanup"""
+        cleanup(self)
 
     def run(self):
         """Main application loop with FPS limiting"""
@@ -89,7 +102,7 @@ class PythonVulkanDocker:
         target_fps = 60
         frame_time = 1.0 / target_fps
         
-        # Extended error handling for Vulkan initialization
+        # Initialize Vulkan
         try:
             print("DEBUG: Attempting Vulkan initialization")
             if not self.init_vulkan():
@@ -98,43 +111,23 @@ class PythonVulkanDocker:
                 return
         except Exception as init_error:
             print(f"CRITICAL ERROR during Vulkan initialization: {init_error}")
-            import traceback
             traceback.print_exc()
             self.running = False
             return
             
-        # Initialize shader hot reload system with better error handling
-        try:
-            if hasattr(self, 'shader_files'):
-                shader_files = {k: v for k, v in self.shader_files.items() if v is not None}
-                if shader_files:
-                    print(f"DEBUG: Setting up shader hot reload for: {shader_files}")
-                    self.shader_hot_reload = ShaderHotReload(self, shader_files)
-                    self.shader_hot_reload.start()
-                    print("DEBUG: Shader hot reload system started")
-                else:
-                    print("DEBUG: No external shader files found, hot reload disabled")
-        except Exception as shader_error:
-            print(f"WARNING: Error setting up shader hot reload: {shader_error}")
-            import traceback
-            traceback.print_exc()
-            # Continue even if shader hot reload setup fails
-        
-        # Persistent loop with extended error handling
+        # Main rendering loop
         print("DEBUG: Entering main rendering loop")
         try:
-            print("DEBUG: Entering glfw window loop")
-            import time
+            # Set up timing
             self.startTime = time.time()
             last_fps_time = self.startTime
             last_frame_time = self.startTime
             frame_count = 0
             
-            # Set window title with frame counter
-            import glfw
+            # Set initial window title
             glfw.set_window_title(self.window, f"{self.title} - Starting... (Target: {target_fps} FPS)")
             
-            # Main render loop - run until window is closed or application is terminated
+            # Main loop
             while not glfw.window_should_close(self.window) and self.running:
                 # Get current time
                 current_time = time.time()
@@ -147,16 +140,8 @@ class PythonVulkanDocker:
                 
                 # Only render if enough time has passed (FPS limiting)
                 if delta_time >= frame_time:
-                    # Attempt to draw frame with better error handling
-                    try:
-                        if not self.draw_frame():
-                            print("ERROR: Failed to draw frame")
-                            # Don't break here - just continue to keep window open
-                    except Exception as frame_error:
-                        print(f"ERROR in draw_frame: {frame_error}")
-                        import traceback
-                        traceback.print_exc()
-                        # Don't break here - just continue to keep window open
+                    # Draw frame (simplified)
+                    self.draw_frame()
                     
                     # Update FPS counter every second
                     frame_count += 1
@@ -167,35 +152,24 @@ class PythonVulkanDocker:
                         last_fps_time = current_time
                         print(f"DEBUG: FPS: {fps:.1f}")
                     
-                    # Increment global frame counter
+                    # Increment frame counters
                     self.frameCount += 1
-                    if self.frameCount % 100 == 0:
-                        print(f"DEBUG: Rendered {self.frameCount} frames")
-                        
+                    self.frameIndex = (self.frameIndex + 1) % MAX_FRAMES_IN_FLIGHT
+                    
                     # Update last frame time
                     last_frame_time = current_time
                 else:
-                    # Sleep for a short time to avoid hogging the CPU while waiting for the next frame
+                    # Sleep to avoid hogging CPU
                     time.sleep(0.001)
                     
-        except Exception as main_loop_error:
-            print(f"CRITICAL ERROR in main loop: {main_loop_error}")
-            import traceback
+        except Exception as loop_error:
+            print(f"CRITICAL ERROR in main loop: {loop_error}")
             traceback.print_exc()
         finally:
-            # Ensure cleanup happens
+            # Ensure cleanup
             print("DEBUG: Entering cleanup phase")
-            try:
-                if hasattr(self, 'shader_hot_reload') and self.shader_hot_reload:
-                    self.shader_hot_reload.stop()
-                    print("DEBUG: Shader hot reload system stopped")
-                
-                self.cleanup()
-                print("DEBUG: Cleanup completed successfully")
-            except Exception as cleanup_error:
-                print(f"ERROR during cleanup: {cleanup_error}")
-                import traceback
-                traceback.print_exc()
+            self.cleanup()
+
 def main():
     """Entry point"""
     try:
@@ -213,7 +187,7 @@ def main():
     try:
         print("DEBUG: Application completed, press Enter to exit...")
         input()  # This will keep the program running until user presses Enter
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         pass
     
     return 0
