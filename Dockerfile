@@ -62,6 +62,6 @@ COPY . /app
 
 # Ensure correct permissions
 RUN chmod +x /usr/local/bin/glslangValidator
-RUN chmod 644 PythonVulkanDocker/vertex_shader.glsl PythonVulkanDocker/fragment_shader.glsl
+RUN chmod 644 PythonVulkanDocker/shader_vertex.glsl PythonVulkanDocker/shader_fragment.glsl
 # Run the application
 CMD ["python", "-m", "PythonVulkanDocker"]
