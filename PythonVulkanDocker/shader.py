@@ -6,6 +6,7 @@ import ctypes
 import os
 import subprocess
 import tempfile
+import array
 import vulkan as vk
 
 class ShaderManager:
@@ -67,11 +68,25 @@ class ShaderManager:
         shader_type = 'vert' if 'vertex' in shader_path else 'frag'
         spirv_code = self.compile_shader(shader_path, shader_type)
         
+        # Ensure code size is multiple of 4 (SPIR-V word size)
+        if len(spirv_code) % 4 != 0:
+            padding = 4 - (len(spirv_code) % 4)
+            spirv_code += b'\0' * padding
+        
+        # Create uint32 array from bytes
+        words = array.array('I', spirv_code)
+        word_count = len(words)
+        
+        # Create ctypes array from the array object
+        c_words = (ctypes.c_uint32 * word_count)()
+        for i in range(word_count):
+            c_words[i] = words[i]
+        
         # Create shader module
         shader_module_info = vk.VkShaderModuleCreateInfo(
             sType=vk.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
             codeSize=len(spirv_code),
-            pCode=spirv_code
+            pCode=c_words
         )
         
         shader_module = ctypes.c_void_p()

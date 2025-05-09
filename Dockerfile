@@ -19,28 +19,9 @@ RUN apt-get update && apt-get install -y \
     vulkan-validationlayers \
     spirv-tools \
     glslang-tools \
+    mesa-utils \
+    pciutils \
     && rm -rf /var/lib/apt/lists/*
-
-# Install glslangValidator with comprehensive error handling and debugging
-RUN set -e \
-    && echo "Downloading glslang" \
-    && wget -O glslang.zip -q https://github.com/KhronosGroup/glslang/releases/download/master-tot/glslang-master-linux-Release.zip \
-    && echo "Unzipping glslang" \
-    && unzip -o -q glslang.zip \
-    && echo "Listing unzipped directory contents:" \
-    && find . -type f \
-    && echo "Attempting to locate glslangValidator" \
-    && find . -name "glslangValidator" \
-    && mkdir -p /usr/local/bin \
-    && VALIDATOR_PATH=$(find . -name "glslangValidator" | head -n 1) \
-    && if [ -z "$VALIDATOR_PATH" ]; then \
-        echo "ERROR: glslangValidator not found" && exit 1; \
-    fi \
-    && cp "$VALIDATOR_PATH" /usr/local/bin/glslangValidator \
-    && chmod +x /usr/local/bin/glslangValidator \
-    && rm -rf glslang.zip glslang-master-linux-Release \
-    && /usr/local/bin/glslangValidator --version \
-    || (echo "glslangValidator installation failed" && exit 1)
 
 # Upgrade pip, setuptools, and wheel
 RUN pip install --upgrade pip setuptools wheel
@@ -51,8 +32,10 @@ RUN pip install --no-cache-dir \
     cffi==1.16.0 \
     glfw==2.6.0 \
     setuptools \
-    && pip install --no-cache-dir vulkan==1.3.275.1 \
-    || (echo "Python package installation failed" && exit 1)
+    && pip install --no-cache-dir vulkan==1.3.275.1
+
+# Prepare runtime directory
+RUN mkdir -p /tmp/runtime-dir && chmod 700 /tmp/runtime-dir
 
 # Create working directory
 WORKDIR /app
@@ -61,7 +44,11 @@ WORKDIR /app
 COPY . /app
 
 # Ensure correct permissions
-RUN chmod +x /usr/local/bin/glslangValidator
 RUN chmod 644 PythonVulkanDocker/shader_vertex.glsl PythonVulkanDocker/shader_fragment.glsl
+
+# Set environment variables
+ENV XDG_RUNTIME_DIR=/tmp/runtime-dir
+ENV PYTHONUNBUFFERED=1
+
 # Run the application
-CMD ["python", "-m", "PythonVulkanDocker"]
+CMD ["python", "-m", "PythonVulkanDocker", "--debug"]

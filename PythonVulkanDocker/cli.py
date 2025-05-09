@@ -3,6 +3,7 @@ Command-line interface for the Vulkan application.
 """
 import argparse
 import logging
+import os
 
 def parse_args():
     """Parse command-line arguments"""
@@ -22,8 +23,28 @@ def parse_args():
                         help="Disable vertical synchronization")
     parser.add_argument("--color", type=str, default="0.0,0.0,0.0",
                         help="Background color (R,G,B format, values 0.0-1.0)")
+    parser.add_argument("--docker-mode", action="store_true",
+                        help="Enable Docker-specific optimizations")
+    parser.add_argument("--software-rendering", action="store_true",
+                        help="Force software rendering")
+    parser.add_argument("--minimal", action="store_true",
+                        help="Use minimal Vulkan features (useful for troubleshooting)")
     
-    return parser.parse_args()
+    args = parser.parse_args()
+    
+    # Auto-detect Docker environment if not explicitly set
+    if args.docker_mode or os.environ.get("DOCKER_CONTAINER") == "1" or os.path.exists("/.dockerenv"):
+        args.docker_mode = True
+        
+        # Apply Docker-specific defaults if not explicitly set
+        if not args.software_rendering and os.environ.get("LIBGL_ALWAYS_SOFTWARE") != "0":
+            args.software_rendering = True
+    
+    # Set environment variables based on arguments
+    if args.software_rendering:
+        os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
+    
+    return args
 
 def setup_logging(debug=False):
     """Configure logging based on command-line arguments"""

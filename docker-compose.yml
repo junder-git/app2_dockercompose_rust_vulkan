@@ -11,15 +11,13 @@ services:
       - VK_LOADER_DEBUG=all  # Enable Vulkan loader debugging
       - LIBGL_DEBUG=verbose  # Debug OpenGL/Mesa
       - LIBGL_ALWAYS_SOFTWARE=1  # Force software rendering
+      - XDG_RUNTIME_DIR=/tmp/runtime-dir  # Set runtime directory
+      - PYTHONUNBUFFERED=1  # Don't buffer Python output
     volumes:
       - .:/app
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [graphics]
+    # Create XDG_RUNTIME_DIR first
+    command: >
+      sh -c "mkdir -p /tmp/runtime-dir && chmod 700 /tmp/runtime-dir && python -m PythonVulkanDocker --debug"
 
 networks:
   default:
