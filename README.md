@@ -34,11 +34,13 @@ PythonVulkanDocker/
 ├── framebuffer.py      # Framebuffer management
 ├── instance.py         # Vulkan instance management
 ├── pipeline.py         # Graphics pipeline management
+├── render_pass.py      # Render pass management
 ├── shader.py           # Shader management
 ├── shader_fragment.glsl # Fragment shader
 ├── shader_vertex.glsl  # Vertex shader
 ├── surface.py          # Surface and window management
 ├── swapchain.py        # Swap chain management
+├── sync.py             # Synchronization objects
 └── utils.py            # Utility functions
 ```
 
@@ -90,11 +92,29 @@ The application supports the following command-line options:
 - `--title`: Window title (default: "Python Vulkan Docker Demo")
 - `--debug`: Enable debug logging
 - `--validation`: Enable Vulkan validation layers
+- `--no-vsync`: Disable vertical synchronization
+- `--color`: Background color (R,G,B format, values 0.0-1.0)
 
 Example:
 ```bash
-python -m PythonVulkanDocker --width 1024 --height 768 --debug
+python -m PythonVulkanDocker --width 1024 --height 768 --debug --color 0.2,0.3,0.3
 ```
+
+## Module Descriptions
+
+- `instance.py`: Creates and manages the Vulkan instance
+- `surface.py`: Handles window creation and surface management
+- `device.py`: Manages physical and logical device selection and creation
+- `swapchain.py`: Implements the swap chain for image presentation
+- `render_pass.py`: Creates and manages render passes
+- `pipeline.py`: Builds the graphics pipeline
+- `shader.py`: Handles shader compilation and module creation
+- `framebuffer.py`: Creates and manages framebuffers
+- `command_buffer.py`: Manages command pools and buffers
+- `sync.py`: Provides synchronization primitives
+- `utils.py`: Contains utility functions
+- `cli.py`: Implements command-line interface
+- `application.py`: Main application orchestration
 
 ## Troubleshooting
 
