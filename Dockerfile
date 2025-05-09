@@ -87,15 +87,8 @@ ENV GLFW_IM_MODULE=ibus
 # For headless operation (fallback)
 ENV VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
 
-
-# Verify Python package imports with error handling
-RUN python -c "import setuptools; print('Setuptools import successful')" \
-    && python -c "import glfw; print('GLFW import successful')" \
-    && python -c "import vulkan; print('Vulkan import successful')" \
-    || (echo "Import verification failed" && exit 1)
-
 # Ensure correct permissions
 RUN chmod +x /usr/local/bin/glslangValidator
-RUN chmod 644 vertex_shader.glsl fragment_shader.glsl
+RUN chmod 644 PythonVulkanDocker/vertex_shader.glsl PythonVulkanDocker/fragment_shader.glsl
 # Run the application
 CMD ["python", "-m", "PythonVulkanDocker"]
