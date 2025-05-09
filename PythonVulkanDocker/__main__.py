@@ -1,5 +1,5 @@
 # PythonVulkanDocker/__main__.py
-# Simplified version using the Vulkan helper
+# Updated to use the modular triangle renderer
 
 #!/usr/bin/env python3
 """
@@ -21,12 +21,15 @@ from .config import *
 # Import the Vulkan helper
 from .vulkan_helper import VulkanHelper
 
-# Import simplified rendering and cleanup
+# Import the triangle renderer
+from .rendering.triangle_renderer import TriangleRenderer
+
+# Import rendering modules
 from .rendering.draw_frame import draw_frame
 from .core.cleanup import cleanup
 
 class PythonVulkanDocker:
-    """Main Vulkan application class using VulkanHelper"""
+    """Main Vulkan application class using modular renderer"""
     def __init__(self, width=800, height=600, title="Vulkan Triangle"):
         """Initialize the Vulkan application"""
         # Window properties
@@ -37,6 +40,9 @@ class PythonVulkanDocker:
         
         # Vulkan helper
         self.vk_helper = None
+        
+        # Triangle renderer
+        self.renderer = None
         
         # Application state
         self.running = False
@@ -61,7 +67,7 @@ class PythonVulkanDocker:
         print(f"Title: {self.title}")
         print("Checking system capabilities:")
         print(f"  GLFW Version: {glfw.get_version_string()}")
-        print(f"  Using VulkanHelper for simplified setup")
+        print(f"  Using modular triangle renderer")
         print("=" * 50)
 
     def init_window(self):
@@ -81,14 +87,26 @@ class PythonVulkanDocker:
     def init_vulkan(self):
         """Initialize Vulkan using the helper"""
         print("DEBUG: Initializing Vulkan via helper")
-        return self.vk_helper.init_vulkan()
+        if not self.vk_helper.init_vulkan():
+            return False
+            
+        # Create triangle renderer
+        self.renderer = TriangleRenderer(self)
+        
+        # Initialize renderer
+        return self.renderer.init()
 
     def draw_frame(self):
-        """Draw a frame using the simplified draw_frame function"""
-        return draw_frame(self)
+        """Draw a frame using the triangle renderer"""
+        return draw_frame(self, self.renderer)
 
     def cleanup(self):
-        """Clean up resources using simplified cleanup"""
+        """Clean up all resources"""
+        # Clean up renderer first
+        if self.renderer:
+            self.renderer.cleanup()
+            
+        # Then clean up Vulkan helper
         cleanup(self)
 
     def run(self):
@@ -140,7 +158,7 @@ class PythonVulkanDocker:
                 
                 # Only render if enough time has passed (FPS limiting)
                 if delta_time >= frame_time:
-                    # Draw frame (simplified)
+                    # Draw frame using triangle renderer
                     self.draw_frame()
                     
                     # Update FPS counter every second

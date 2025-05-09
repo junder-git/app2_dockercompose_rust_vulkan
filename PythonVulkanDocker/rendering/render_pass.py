@@ -1,13 +1,12 @@
 import vulkan as vk
+import traceback
 
-def create_render_pass(app):
-    """Create render pass for rendering to the swap chain"""
-    print("DEBUG: Creating render pass")
-    
+def create_render_pass(device, surface_format):
+    """Create a simple render pass for rendering to the swapchain"""
     try:
         # Color attachment description
-        colorAttachment = vk.VkAttachmentDescription(
-            format=app.swapChainImageFormat,
+        color_attachment = vk.VkAttachmentDescription(
+            format=surface_format,
             samples=vk.VK_SAMPLE_COUNT_1_BIT,
             loadOp=vk.VK_ATTACHMENT_LOAD_OP_CLEAR,
             storeOp=vk.VK_ATTACHMENT_STORE_OP_STORE,
@@ -17,8 +16,8 @@ def create_render_pass(app):
             finalLayout=vk.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
         )
         
-        # Color attachment reference
-        colorAttachmentRef = vk.VkAttachmentReference(
+        # Attachment reference
+        color_attachment_ref = vk.VkAttachmentReference(
             attachment=0,
             layout=vk.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
         )
@@ -27,7 +26,7 @@ def create_render_pass(app):
         subpass = vk.VkSubpassDescription(
             pipelineBindPoint=vk.VK_PIPELINE_BIND_POINT_GRAPHICS,
             colorAttachmentCount=1,
-            pColorAttachments=[colorAttachmentRef]
+            pColorAttachments=[color_attachment_ref]
         )
         
         # Subpass dependency
@@ -40,21 +39,60 @@ def create_render_pass(app):
             dstAccessMask=vk.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
         )
         
-        # Render pass info
-        renderPassInfo = vk.VkRenderPassCreateInfo(
+        # Create render pass
+        render_pass_info = vk.VkRenderPassCreateInfo(
             attachmentCount=1,
-            pAttachments=[colorAttachment],
+            pAttachments=[color_attachment],
             subpassCount=1,
             pSubpasses=[subpass],
             dependencyCount=1,
             pDependencies=[dependency]
         )
         
-        # Create render pass
-        app.renderPass = vk.vkCreateRenderPass(app.device, renderPassInfo, None)
+        render_pass = vk.vkCreateRenderPass(device, render_pass_info, None)
+        print(f"Render pass created: {render_pass}")
         
-        print("DEBUG: Render pass created successfully")
-        return True
+        return render_pass
     except Exception as e:
         print(f"ERROR: Failed to create render pass: {e}")
-        return False
+        traceback.print_exc()
+        return None
+
+def create_framebuffers(device, render_pass, image_views, width, height):
+    """Create framebuffers for each swapchain image view"""
+    try:
+        framebuffers = []
+        
+        for image_view in image_views:
+            attachments = [image_view]
+            
+            framebuffer_info = vk.VkFramebufferCreateInfo(
+                renderPass=render_pass,
+                attachmentCount=len(attachments),
+                pAttachments=attachments,
+                width=width,
+                height=height,
+                layers=1
+            )
+            
+            framebuffer = vk.vkCreateFramebuffer(device, framebuffer_info, None)
+            framebuffers.append(framebuffer)
+        
+        print(f"Created {len(framebuffers)} framebuffers")
+        return framebuffers
+    except Exception as e:
+        print(f"ERROR: Failed to create framebuffers: {e}")
+        traceback.print_exc()
+        return []
+
+def cleanup_framebuffers(device, framebuffers):
+    """Destroy all framebuffers"""
+    try:
+        for framebuffer in framebuffers:
+            if framebuffer:
+                vk.vkDestroyFramebuffer(device, framebuffer, None)
+        
+        print(f"Cleaned up {len(framebuffers)} framebuffers")
+    except Exception as e:
+        print(f"ERROR: Failed to clean up framebuffers: {e}")
+        traceback.print_exc()
