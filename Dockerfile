@@ -11,7 +11,6 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Copy Cargo.toml first to leverage Docker cache when dependencies don't change
 COPY ./Cargo.toml ./
-RUN cargo build --release
 
 # Copy the rest of the application
 COPY ./src ./src
