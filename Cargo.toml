@@ -1,0 +1,8 @@
+[package]
+name = "shader_reloader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vulkano = "0.30.0"  # You may need to adjust this version
+notify = "5.0"       # For file watching

@@ -1,24 +1,15 @@
-version: '3.8'
-
 services:
-  vulkan-python:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    environment:
-      - DISPLAY=host.docker.internal:0.0
-      - DOCKER_CONTAINER=1  # Flag to indicate running in Docker
-      - VK_LOADER_DEBUG=all  # Enable Vulkan loader debugging
-      - LIBGL_DEBUG=verbose  # Debug OpenGL/Mesa
-      - LIBGL_ALWAYS_SOFTWARE=1  # Force software rendering
-      - XDG_RUNTIME_DIR=/tmp/runtime-dir  # Set runtime directory
-      - PYTHONUNBUFFERED=1  # Don't buffer Python output
+  shader_reloader:
+    build: .
     volumes:
       - .:/app
-    # Create XDG_RUNTIME_DIR first
-    command: >
-      sh -c "mkdir -p /tmp/runtime-dir && chmod 700 /tmp/runtime-dir && python -m PythonVulkanDocker --debug"
-
-networks:
-  default:
-    driver: bridge
+    environment:
+      - RUST_LOG=debug
+    stdin_open: true
+    tty: true
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
