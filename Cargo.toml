@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-vulkano = "0.30.0"  # You may need to adjust this version
+vulkano = "0.25"
+winit = "0.26" # or the latest compatible version if you're using a window library
 notify = "5.0"       # For file watching
