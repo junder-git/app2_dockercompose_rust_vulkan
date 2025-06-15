@@ -1,4 +1,5 @@
-FROM nvidia/cuda:11.2.0-base-ubuntu20.04
+FROM nvidia/cuda:12.9.0-cudnn-runtime-ubuntu24.04
+
 WORKDIR /app
 
 # Install Rust and Cargo
