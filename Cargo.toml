@@ -6,7 +6,7 @@ publish = false
 
 [[bin]]
 name = "jproj_vulkan"
-path = "main.rs"
+path = "src/main.rs"
 test = false
 bench = false
 doc = false
