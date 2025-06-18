@@ -17,16 +17,20 @@ RUN /bin/bash -c "source $HOME/.cargo/env && \
     rustup default stable && \
     apt-get clean && rm -rf /var/lib/apt/lists/*"
 
-# Copy only the Cargo.toml file for dependency caching
-COPY ./Cargo.toml ./
+# Copy only the Cargo.toml and Cargo.lock files for dependency caching
+COPY ./Cargo.toml ./Cargo.toml
+COPY ./Cargo.lock ./Cargo.lock
+
+# Create an empty src directory to ensure it exists before copying actual source code
+RUN mkdir -p src
+
+# Build dependencies (this step will be cached if nothing changes in Cargo.toml and Cargo.lock)
+RUN cargo build --release
+
 # Copy the rest of the application code, only when necessary
 COPY ./src ./src
-COPY ./shaders ./shaders
 
-# Ensure there's a Cargo.lock or generate one (this step will be cached)
-RUN cargo update --aggressive
-
-# Build the final binary for running (this step will only re-run if source files change)
+# Rebuild only if source files change
 RUN cargo build --release
 
 # Stage 2: Runtime stage
