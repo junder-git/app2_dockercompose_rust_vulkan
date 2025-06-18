@@ -3,27 +3,28 @@ FROM nvidia/cuda:12.9.0-cudnn-runtime-ubuntu24.04 AS builder
 
 WORKDIR /app
 
-# Install Rust and Cargo (this layer will be cached if nothing changes here)
+# Install dependencies (this layer will be cached if nothing changes here)
 RUN apt-get update && \
-    apt-get install -y pkg-config cmake curl build-essential && \
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-    rm -rf /var/lib/apt/lists/*  # Clean up to reduce image size
+    apt-get install -y libfontconfig1-dev pkg-config cmake curl build-essential software-properties-common lsb-release bash && \
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
+# Add Cargo bin to PATH
 ENV PATH="/root/.cargo/bin:${PATH}"
+ENV PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig/
+
+# Set Rust version (this layer will be cached if the command doesn't change)
+RUN /bin/bash -c "source $HOME/.cargo/env && \
+    rustup default stable && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*"
 
 # Copy only the Cargo.toml file for dependency caching
 COPY ./Cargo.toml ./
-
-# Create an empty Cargo.lock if it doesn't exist yet (this helps with initial builds)
-RUN if [ ! -f Cargo.lock ]; then echo "Generating initial Cargo.lock..."; cargo update --aggressive; fi
-
-# Copy the Cargo.lock file (if present) and build dependencies
-COPY ./Cargo.lock ./
-RUN cargo build --release
-
 # Copy the rest of the application code, only when necessary
 COPY ./src ./src
 COPY ./shaders ./shaders
+
+# Ensure there's a Cargo.lock or generate one (this step will be cached)
+RUN cargo update --aggressive
 
 # Build the final binary for running (this step will only re-run if source files change)
 RUN cargo build --release
