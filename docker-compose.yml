@@ -1,10 +1,9 @@
-
 services:
   jproj_vulkan:
     command: ["sh", "-c", "cargo run --release"]
-    build: .
-    volumes:
-      - .:/app
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       - RUST_LOG=debug
     stdin_open: true
