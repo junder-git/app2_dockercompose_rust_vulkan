@@ -1,5 +1,5 @@
 services:
-  shader_reloader:
+  jproj_vulkan:
     build: .
     volumes:
       - .:/app
