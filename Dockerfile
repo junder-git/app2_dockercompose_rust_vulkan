@@ -19,7 +19,6 @@ RUN /bin/bash -c "source $HOME/.cargo/env && \
 
 # Copy only the Cargo.toml and Cargo.lock files for dependency caching
 COPY ./Cargo.toml ./Cargo.toml
-COPY ./Cargo.lock ./Cargo.lock
 
 # Create an empty src directory to ensure it exists before copying actual source code
 RUN mkdir -p src
