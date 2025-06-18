@@ -1,10 +1,21 @@
 [package]
-name = "vulkano_example"
-version = "0.1.0"
+name = "jproj_vulkan"
+version = "0.0.0"
 edition = "2021"
+publish = false
+
+[[bin]]
+name = "jproj_vulkan"
+path = "main.rs"
+test = false
+bench = false
+doc = false
 
 [dependencies]
-vulkano = { version = "0.35", features = ["build-from-source"] }
-vulkano-shaders = "0.35"
-vulkano-taskgraph = "0.35"
-vulkano-util = "0.35"
+# The `vulkano` crate is the main crate that you must use to use Vulkan.
+vulkano = "0.35" #= { workspace = true, default-features = true }
+# Provides the `shader!` macro that is used to generate code for using shaders.
+vulkano-shaders = "0.35" #= { workspace = true }
+# The Vulkan library doesn't provide any functionality to create and handle windows, as
+# this would be out of scope. In order to open a window, we are going to use the `winit` crate.
+winit = "0.28" #= { workspace = true, default-features = true }

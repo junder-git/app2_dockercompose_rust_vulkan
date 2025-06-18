@@ -35,6 +35,6 @@ FROM nvidia/cuda:12.9.0-cudnn-runtime-ubuntu24.04
 WORKDIR /app
 
 # Copy only the built binary from the builder stage
-COPY --from=builder /app/target/release/shader_reloader ./
+COPY --from=builder /app/target/release/jproj_vulkan ./
 
-ENTRYPOINT ["./shader_reloader"]
+ENTRYPOINT ["./jproj_vulkan"]
