@@ -1,10 +1,10 @@
 [package]
-name = "shader_reloader"
+name = "vulkano_example"
 version = "0.1.0"
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition = "2021"
 
 [dependencies]
-vulkano = "0.30"  # Check for the latest version
-winit = "0.27"
+vulkano = { version = "0.35", features = ["build-from-source"] }
+vulkano-shaders = "0.35"
+vulkano-taskgraph = "0.35"
+vulkano-util = "0.35"

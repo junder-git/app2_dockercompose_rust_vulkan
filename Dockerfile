@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install dependencies (this layer will be cached if nothing changes here)
 RUN apt-get update && \
-    apt-get install -y libfontconfig1-dev pkg-config cmake curl build-essential software-properties-common lsb-release bash && \
+    apt-get install -y git libfontconfig1-dev pkg-config cmake curl build-essential software-properties-common lsb-release bash && \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 # Add Cargo bin to PATH
