@@ -1,5 +1,7 @@
+
 services:
   jproj_vulkan:
+    command: ["sh", "-c", "cargo run --release"]
     build: .
     volumes:
       - .:/app
