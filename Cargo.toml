@@ -1,9 +1,10 @@
 [package]
 name = "shader_reloader"
 version = "0.1.0"
-edition = "2021"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vulkano = "0.25"
-winit = "0.26" # or the latest compatible version if you're using a window library
-notify = "5.0"       # For file watching
+vulkano = "0.30"  # Check for the latest version
+winit = "0.27"
