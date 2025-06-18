@@ -13,9 +13,9 @@ doc = false
 
 [dependencies]
 # The `vulkano` crate is the main crate that you must use to use Vulkan.
-vulkano = { default-features = true }
+vulkano = "0.35"
 # Provides the `shader!` macro that is used to generate code for using shaders.
-vulkano-shaders = "0.35" #= { workspace = true }
+vulkano-shaders = "0.35"
 # The Vulkan library doesn't provide any functionality to create and handle windows, as
 # this would be out of scope. In order to open a window, we are going to use the `winit` crate.
-winit = { default-features = true }
+winit = "0.28"
