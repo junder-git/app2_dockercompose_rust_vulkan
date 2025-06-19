@@ -26,9 +26,10 @@ RUN mkdir -p src && echo 'fn main() { println!("Hello, world!"); }' > src/main.r
 
 # Build the dependencies (this step will be cached if nothing changes in Cargo.toml and Cargo.lock)
 RUN cargo build --release
+RUN rm -Rf src
 
 # Second step: build local crate(s)
-COPY ./src ./src
+COPY src src
 
 # Rebuild only if source files change
 RUN cargo build --release

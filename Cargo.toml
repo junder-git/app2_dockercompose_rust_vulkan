@@ -4,6 +4,13 @@ version = "0.0.0"
 edition = "2021"
 publish = false
 
+[features]
+build-from-source = []
+
+[build-dependencies]
+# If you have build dependencies, list them here
+cc = "1.0"
+
 [[bin]]
 name = "jproj_vulkan"
 path = "src/main.rs"
@@ -12,10 +19,16 @@ bench = false
 doc = false
 
 [dependencies]
+# List your dependencies here
+serde = { version = "1.0", features = ["derive"] }
 # The `vulkano` crate is the main crate that you must use to use Vulkan.
 vulkano = "0.35"
 # Provides the `shader!` macro that is used to generate code for using shaders.
 vulkano-shaders = "0.35"
 # The Vulkan library doesn't provide any functionality to create and handle windows, as
 # this would be out of scope. In order to open a window, we are going to use the `winit` crate.
-winit = "0.28"
+winit = "0.30.11"
+
+[target.'cfg(windows)'.dependencies.winapi]
+version = "0.3"  # or whatever version you want
+features = ["errhandlingapi", "winbase", "winerror"]

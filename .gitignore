@@ -1,1 +1,6 @@
 .env
+.git
+target
+*.rs.bk
+*.sh.bk
+node_modules
