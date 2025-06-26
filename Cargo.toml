@@ -1,34 +1,12 @@
 [package]
-name = "jproj_vulkan"
-version = "0.0.0"
+name = "app2_wgpu_project"
+version = "0.1.0"
 edition = "2021"
-publish = false
-
-[features]
-build-from-source = []
-
-[build-dependencies]
-# If you have build dependencies, list them here
-cc = "1.0"
-
-[[bin]]
-name = "jproj_vulkan"
-path = "src/main.rs"
-test = false
-bench = false
-doc = false
 
 [dependencies]
-# List your dependencies here
-serde = { version = "1.0", features = ["derive"] }
-# The `vulkano` crate is the main crate that you must use to use Vulkan.
-vulkano = "0.35"
-# Provides the `shader!` macro that is used to generate code for using shaders.
-vulkano-shaders = "0.35"
-# The Vulkan library doesn't provide any functionality to create and handle windows, as
-# this would be out of scope. In order to open a window, we are going to use the `winit` crate.
-winit = "0.30.11"
-
-[target.'cfg(windows)'.dependencies.winapi]
-version = "0.3"  # or whatever version you want
-features = ["errhandlingapi", "winbase", "winerror"]
+winit = "0.28"
+env_logger = "0.10"
+log = "0.4"
+wgpu = "0.13"
+pollster = "0.3"  # For blocking on wgpu futures in async contexts
+noise = "0.7"      # For Perlin noise generation
