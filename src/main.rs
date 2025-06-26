@@ -16,6 +16,7 @@ struct State {
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
+    indices: Vec<u32>, // Make sure to include this field
 }
 
 impl State {
@@ -120,6 +121,7 @@ impl State {
             render_pipeline,
             vertex_buffer,
             index_buffer,
+            indices: terrain.indices, // Include the indices here
         }
     }
 
@@ -151,7 +153,7 @@ impl State {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.1, g: 0.2, b: 0.3, a: 1.0 }),
-                        store: true
+                        store: true // Corrected to be the right type
                     }
                 })],
                 depth_stencil_attachment: None,
