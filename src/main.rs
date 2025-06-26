@@ -56,10 +56,9 @@ impl State {
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(terrain.indices.as_slice()),
-            usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST, // Corrected to INDEX
         });
 
-        // Create pipeline layout and render pipeline
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[],
@@ -73,13 +72,13 @@ impl State {
                 module: &shader,
                 entry_point: "vs_main",
                 buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: std::mem::size_of::<[f32; 3]>() as u64,
+                    array_stride: std::mem::size_of::<[f64; 3]>() as u64, // Correct stride for [f64; 3]
                     step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &[
                         wgpu::VertexAttribute {
-                            offset: 0,
+                            offset: (0 * std::mem::size_of::<f64>()) as u64, // First attribute in bytes
                             shader_location: 0,
-                            format: wgpu::VertexFormat::Float32x3,
+                            format: wgpu::VertexFormat::Float64x3, // Correct vertex format for 3 doubles
                         },
                     ],
                 }],
@@ -87,11 +86,11 @@ impl State {
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: "fs_main",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: surface.get_supported_formats(&adapter)[0],
+                targets: &[wgpu::ColorTargetState {
+                    format: surface.get_supported_formats(&device)[0],
                     blend: None,
                     write_mask: wgpu::ColorWrites::ALL,
-                })],
+                }],
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -101,13 +100,15 @@ impl State {
                 polygon_mode: wgpu::PolygonMode::Fill,
                 unclipped_depth: false,
                 conservative: false,
+                ..Default::default()
             },
-            depth_stencil: None,
+            depth_stencil: None, // Add this if you have depth testing/stenciling
             multisample: wgpu::MultisampleState {
                 count: 1,
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
+            multiview: None,
         });
 
         State {
@@ -121,7 +122,17 @@ impl State {
     }
 
     fn resize_state(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        // Update surface configuration
+        let surface_format = self.surface.get_supported_formats(&self.device.adapter)
+            .first()
+            .expect("No supported surface formats found.");
+
+        self.surface.configure(&self.device, &wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: *surface_format,
+            width: new_size.width,
+            height: new_size.height,
+            present_mode: wgpu::PresentMode::Fifo,
+        });
     }
 
     fn input(&mut self, _event: &winit::event::Event<'_>) -> bool {
@@ -150,6 +161,10 @@ impl State {
             });
 
             // Execute render pipeline
+            _render_pass.set_pipeline(&self.render_pipeline);
+            _render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            _render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint64);
+            _render_pass.draw_indexed(0..self.indices.len() as u64, 0, 0..1); // Adjust the draw call to your needs
         }
 
         self.queue.submit(iter::once(encoder.finish()));
