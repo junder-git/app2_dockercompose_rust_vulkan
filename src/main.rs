@@ -3,6 +3,11 @@ mod terrain;
 use std::iter;
 use winit::{event_loop::{EventLoop, ControlFlow}, window::WindowBuilder};
 use wgpu::util::DeviceExt;
+use bytemuck::cast_slice;
+
+struct Vertex {
+    position: [f32; 3],
+}
 
 struct State {
     surface: wgpu::Surface,
@@ -34,8 +39,7 @@ impl State {
                 label: None,
                 features: wgpu::Features::empty(),
                 limits: wgpu::Limits::default(),
-            },
-            None
+            }
         ).await.unwrap();
 
         // Create render pipeline with shaders
@@ -49,13 +53,13 @@ impl State {
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(terrain.vertices.as_slice()),
+            contents: cast_slice(terrain.vertices.as_slice()),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(terrain.indices.as_slice()),
+            contents: cast_slice(terrain.indices.as_slice()),
             usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST, // Corrected to INDEX
         });
 
@@ -72,15 +76,13 @@ impl State {
                 module: &shader,
                 entry_point: "vs_main",
                 buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: std::mem::size_of::<[f64; 3]>() as u64, // Correct stride for [f64; 3]
+                    array_stride: std::mem::size_of::<Vertex>() as u32,
                     step_mode: wgpu::VertexStepMode::Vertex,
-                    attributes: &[
-                        wgpu::VertexAttribute {
-                            offset: (0 * std::mem::size_of::<f64>()) as u64, // First attribute in bytes
-                            shader_location: 0,
-                            format: wgpu::VertexFormat::Float64x3, // Correct vertex format for 3 doubles
-                        },
-                    ],
+                    attributes: &[wgpu::VertexAttribute {
+                        offset: 0,
+                        shader_location: 0,
+                        format: wgpu::VertexFormat::Float32x3
+                    }],
                 }],
             },
             fragment: Some(wgpu::FragmentState {
@@ -89,7 +91,7 @@ impl State {
                 targets: &[wgpu::ColorTargetState {
                     format: surface.get_supported_formats(&device)[0],
                     blend: None,
-                    write_mask: wgpu::ColorWrites::ALL,
+                    write_mask: wgpu::ColorWrites::ALL
                 }],
             }),
             primitive: wgpu::PrimitiveState {
@@ -122,13 +124,9 @@ impl State {
     }
 
     fn resize_state(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        let surface_format = self.surface.get_supported_formats(&self.device.adapter)
-            .first()
-            .expect("No supported surface formats found.");
-
-        self.surface.configure(&self.device, &wgpu::SurfaceConfiguration {
+        let size = self.surface.configure(&self.device, &wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: *surface_format,
+            format: surface.get_supported_formats(&device)[0],
             width: new_size.width,
             height: new_size.height,
             present_mode: wgpu::PresentMode::Fifo,
@@ -148,14 +146,13 @@ impl State {
 
         {
             let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
+                    view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.1, g: 0.2, b: 0.3, a: 1.0 }),
-                        store: true,
-                    },
+                        store: true
+                    }
                 })],
                 depth_stencil_attachment: None,
             });
@@ -163,8 +160,8 @@ impl State {
             // Execute render pipeline
             _render_pass.set_pipeline(&self.render_pipeline);
             _render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            _render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint64);
-            _render_pass.draw_indexed(0..self.indices.len() as u64, 0, 0..1); // Adjust the draw call to your needs
+            _render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            _render_pass.draw_indexed(0..self.indices.len() as u32, 0, 0..1); // Adjust the draw call to your needs
         }
 
         self.queue.submit(iter::once(encoder.finish()));
