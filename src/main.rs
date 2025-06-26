@@ -1,5 +1,4 @@
 mod terrain;
-mod renderer;
 
 use std::iter;
 use winit::{event_loop::{EventLoop, ControlFlow}, window::WindowBuilder};
@@ -39,14 +38,15 @@ impl State {
             None
         ).await.unwrap();
 
-        // Create render pipeline
-        let renderer = renderer::Renderer::new(&device);
-        let render_pipeline = renderer.render_pipeline;
+        // Create render pipeline with shaders
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: None,
+            source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!("shader.wgsl"))),
+        });
 
-        // Generate terrain data using marching cubes
+        // Create vertex and index buffers
         let terrain = terrain::Terrain::new(256);
 
-        // Convert vertices to GPU buffer
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(terrain.vertices.as_slice()),
@@ -57,6 +57,57 @@ impl State {
             label: None,
             contents: bytemuck::cast_slice(terrain.indices.as_slice()),
             usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+        });
+
+        // Create pipeline layout and render pipeline
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: None,
+            bind_group_layouts: &[],
+            push_constant_ranges: &[],
+        });
+
+        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: None,
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: "vs_main",
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<[f32; 3]>() as u64,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &[
+                        wgpu::VertexAttribute {
+                            offset: 0,
+                            shader_location: 0,
+                            format: wgpu::VertexFormat::Float32x3,
+                        },
+                    ],
+                }],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: "fs_main",
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: surface.get_supported_formats(&adapter)[0],
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: Some(wgpu::Face::Back),
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
         });
 
         State {
@@ -135,17 +186,8 @@ fn main() {
             }
         },
         winit::event::Event::RedrawRequested(_) => {
-            match state.render() {
-                Ok(_) => {}
-                Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
-                Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
-                _ => {}
-            }
-        },
-        winit::event::Event::MainEventsCleared => {
-            state.update();
-            window.request_redraw();
+            state.render().unwrap();
         }
-        _ => {},
+        _ => {}
     });
 }

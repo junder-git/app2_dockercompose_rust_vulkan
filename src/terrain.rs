@@ -34,7 +34,7 @@ impl Terrain {
                     let p011 = [x as f32 / grid_spacing, (y+1) as f32 / grid_spacing, (z+1) as f32 / grid_spacing];
                     let p111 = [(x+1) as f32 / grid_spacing, (y+1) as f32 / grid_spacing, (z+1) as f32 / grid_spacing];
 
-                    // Evaluate the points
+                    // Compute Perlin noise values for all points
                     let v000 = perlin.get(p000);
                     let v100 = perlin.get(p100);
                     let v010 = perlin.get(p010);
@@ -45,11 +45,11 @@ impl Terrain {
                     let v011 = perlin.get(p011);
                     let v111 = perlin.get(p111);
 
-                    // Simplified marching cubes: Generate triangles for vertices
+                    // Generate triangles for vertices based on iso_level
                     if (v000 < iso_level && v100 >= iso_level) || (v000 > iso_level && v100 <= iso_level) {
                         indices.push(vertices.len() as u32);
                         let new_vertex = [
-                            (x as f32 + 0.5),
+                            x as f32 + 0.5,
                             y as f32,
                             z as f32
                         ];
