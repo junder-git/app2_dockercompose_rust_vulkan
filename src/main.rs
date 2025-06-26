@@ -10,6 +10,8 @@ struct State {
     device: wgpu::Device,
     queue: wgpu::Queue,
     render_pipeline: wgpu::RenderPipeline,
+    vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
 }
 
 impl State {
@@ -41,11 +43,29 @@ impl State {
         let renderer = renderer::Renderer::new(&device);
         let render_pipeline = renderer.render_pipeline;
 
+        // Generate terrain data using marching cubes
+        let terrain = terrain::Terrain::new(256);
+
+        // Convert vertices to GPU buffer
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(terrain.vertices.as_slice()),
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(terrain.indices.as_slice()),
+            usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+        });
+
         State {
             surface,
             device,
             queue,
             render_pipeline,
+            vertex_buffer,
+            index_buffer,
         }
     }
 
