@@ -9,7 +9,7 @@ use winit::{
     window::Window,
 };
 use wgpu_simplified as ws;
-use wgpu_marching_cubes::{colormap, marching_cubes_table};
+use app2_dockercompose_rust_wgpu_marchingcubes::{colormap, marching_cubes_table};
 
 fn create_color_data(colormap_name: &str) -> Vec<[f32; 4]> {
     let cdata = colormap::colormap_data(colormap_name);
