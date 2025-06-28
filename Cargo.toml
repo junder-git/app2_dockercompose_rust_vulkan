@@ -1,5 +1,5 @@
 [package]
-name = "wgpu_marching_cubes"
+name = "app2_dockercompose_rust_wgpu_marchingcubes"
 version = "0.1.0"
 edition = "2021"
 
