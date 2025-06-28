@@ -1,7 +1,2 @@
-.env
-.git
-target
-*.rs.bk
-*.sh.bk
-node_modules
-Cargo.lock
+/target
+/Cargo.lock
